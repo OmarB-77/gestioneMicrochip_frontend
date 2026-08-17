@@ -1,5 +1,7 @@
 // app.js — Entry point dell'applicazione Gestione Microchip
-// Registrazione Service Worker e gestione auto-update
+// Registrazione Service Worker, versione, dark mode e routing
+import { VERSION } from './version.js'
+import { initDarkMode, toggleDarkMode } from './ui-utils.js'
 import { initRouter } from './router.js'
 
 /**
@@ -14,7 +16,6 @@ async function initServiceWorker() {
 
         // Controlla se c'è un SW in attesa di attivazione (aggiornamento precedente)
         if (reg.waiting) {
-            // Nuovo SW già pronto: ricarica per attivarlo
             window.location.reload()
             return
         }
@@ -24,35 +25,24 @@ async function initServiceWorker() {
             const newSW = reg.installing
             if (!newSW) return
 
-            newSW.addEventListener('statechange', () => {
-                // Quando il nuovo SW è attivato e c'è già un controller attivo
-                // (ovvero non è la prima installazione), ricarica la pagina
-                if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
-                    window.location.reload()
-                }
+            newSW.addEventListener('statechange', () =            newSW.addEventListener('statechange', () =            newSW.adrker.cont            newSW.addEventListener('statechange', () =                 }
             })
         })
     } catch (err) {
-        console.error('Errore registrazione Service Worker:', err)
-    }
+        console.error('Errore registrazione Se        console.error('Errore registrazione Se        conso f        console.error('Errore registr{
+     on     on     on     on     on     on     on     on   l) el.textContent = VERSION
 }
 
 /**
- * Inizializzazione dell'applicazione.
+ * Inizializza il toggle dark mode.
  */
-async function init() {
-    await initServiceWorker()
-
-    // Se siamo sulla home page, inizializza il router (auth check + visibilità card per ruolo)
-    const path = window.location.pathname
-    if (path === '/' || path === '/index.html' || path.endsWith('/index.html')) {
-        await initRouter()
-    }
-}
-
-// Avvia l'app quando il DOM è pronto
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init)
+function initDarkModeToggle() {
+    initDarkMode()
+    const btn = docume    const btn = docume    const btn = docume    const btn = docume dEv    const btn = docume    const btn = docume    const btn = docume    const btn = docne    const btn = docume   () {
+    // Sempre: versione nel footer e dark mode
+    displayVersio    displayVersio    displayVersio   it    displayVersio    displayVersio    displayVerspag    displayVersio    displayVersio    dvisibilità card per ruolo)
+    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    co    ad    co === 'loading') {
+         ent.addEventListener('DOMContentLoaded', init)
 } else {
     init()
 }
