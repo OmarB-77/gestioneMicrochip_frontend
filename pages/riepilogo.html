@@ -18,11 +18,199 @@
             <div id="riepilogo-content" class="riepilogo-grid">
                 <!-- Conteggi caricati dinamicamente -->
             </div>
-            <p id="error-message" class="error-msg" hidden></p>
+            <p id="error-message" class="error-msg" style="text-align:center; font-size:0.9375rem;" hidden></p>
             <button id="btn-retry" class="btn btn-secondary btn-full" hidden>Riprova</button>
         </section>
     </main>
 
-    <script type="module" src="../js/app.js"></script>
+    <script type="module">
+        import { protectPage } from '../js/router.js'
+        import { initDarkMode, showToast } from '../js/ui-utils.js'
+        import { supabase } from '../js/supabase-client.js'
+
+        // Inizializza dark mode
+        initDarkMode()
+
+        // Guard: admin e guest possono accedere
+        const ctx = await protectPage(['admin', 'guest'])
+        if (!ctx) {
+            throw new Error('Accesso negato')
+        }
+
+        const { role, associazione } = ctx
+        const contentEl = document.getElementById('riepilogo-content')
+        const errorEl = document.getElementById('error-message')
+        const retryBtn = document.getElementById('btn-retry')
+
+        /**
+         * Carica i dati di riepilogo e renderizza la vista.
+         */
+        async function loadData() {
+            // Nascondi errori e pulisci contenuto
+            errorEl.hidden = true
+            retryBtn.hidden = true
+            contentEl.innerHTML = ''
+
+            try {
+                if (role === 'admin') {
+                    await loadAdminView()
+                } else {
+                    await loadGuestView()
+                }
+            } catch (err) {
+                showError('Impossibile caricare i dati di riepilogo. Verifica la connessione e riprova.')
+            }
+        }
+
+        /**
+         * Vista Admin: totale generale per tutti e 4 gli stati
+         * + suddivisione per associazione per impiantato/adottato/registrato
+         */
+        async function loadAdminView() {
+            // 1. Query tutti i chip raggruppati per stato
+            const { data: chips, error: chipsError } = await supabase
+                .from('chips')
+                .select('stato, associazione_id')
+
+            if (chipsError) throw chipsError
+
+            // 2. Fetch associazioni per i nomi
+            const { data: associazioni, error: assocError } = await supabase
+                .from('associazioni')
+                .select('id, nome')
+
+            if (assocError) throw assocError
+
+            // Mappa id → nome associazione
+            const assocMap = {}
+            for (const a of associazioni) {
+                assocMap[a.id] = a.nome
+            }
+
+            // 3. Calcola conteggi
+            const stati = ['disponibile', 'impiantato', 'adottato', 'registrato']
+            const labels = {
+                disponibile: 'Disponibile in magazzino',
+                impiantato: 'Impiantato',
+                adottato: 'Adottato',
+                registrato: 'Registrato in BDN'
+            }
+
+            const countsByState = {}
+            const countsByStateAndAssoc = {}
+            for (const s of stati) {
+                countsByState[s] = 0
+                countsByStateAndAssoc[s] = {}
+            }
+
+            for (const chip of chips) {
+                const s = chip.stato
+                countsByState[s] = (countsByState[s] || 0) + 1
+
+                if (s !== 'disponibile' && chip.associazione_id) {
+                    if (!countsByStateAndAssoc[s][chip.associazione_id]) {
+                        countsByStateAndAssoc[s][chip.associazione_id] = 0
+                    }
+                    countsByStateAndAssoc[s][chip.associazione_id]++
+                }
+            }
+
+            // 4. Renderizza
+            // Disponibile: solo totale
+            contentEl.appendChild(createCard(labels.disponibile, countsByState.disponibile))
+
+            // Impiantato, Adottato, Registrato: totale + per associazione
+            for (const s of ['impiantato', 'adottato', 'registrato']) {
+                contentEl.appendChild(createCard(labels[s], countsByState[s]))
+
+                // Sub-lista per associazione
+                const assocCounts = countsByStateAndAssoc[s]
+                if (Object.keys(assocCounts).length > 0) {
+                    const subList = document.createElement('div')
+                    subList.className = 'riepilogo-sublist'
+
+                    for (const [assocId, count] of Object.entries(assocCounts)) {
+                        const nome = assocMap[assocId] || 'Sconosciuta'
+                        const item = document.createElement('div')
+                        item.className = 'riepilogo-subitem'
+                        item.innerHTML = `<span class="sublabel">${escapeHtml(nome)}</span><span class="subcount">${count}</span>`
+                        subList.appendChild(item)
+                    }
+
+                    contentEl.appendChild(subList)
+                }
+            }
+        }
+
+        /**
+         * Vista Guest: solo 3 stati (impiantato/adottato/registrato)
+         * della propria associazione
+         */
+        async function loadGuestView() {
+            // Query chip della propria associazione (RLS filtra già, ma per sicurezza usiamo il filtro esplicito)
+            const { data: chips, error: chipsError } = await supabase
+                .from('chips')
+                .select('stato')
+                .eq('associazione_id', associazione)
+
+            if (chipsError) throw chipsError
+
+            const labels = {
+                impiantato: 'Impiantato',
+                adottato: 'Adottato',
+                registrato: 'Registrato in BDN'
+            }
+
+            const counts = { impiantato: 0, adottato: 0, registrato: 0 }
+
+            for (const chip of chips) {
+                if (counts.hasOwnProperty(chip.stato)) {
+                    counts[chip.stato]++
+                }
+            }
+
+            // Renderizza
+            for (const [stato, label] of Object.entries(labels)) {
+                contentEl.appendChild(createCard(label, counts[stato]))
+            }
+        }
+
+        /**
+         * Crea una card riepilogo con etichetta e conteggio.
+         */
+        function createCard(label, count) {
+            const card = document.createElement('div')
+            card.className = 'riepilogo-card'
+            card.innerHTML = `<span class="label">${escapeHtml(label)}</span><span class="count">${count}</span>`
+            return card
+        }
+
+        /**
+         * Mostra un messaggio di errore con il pulsante Riprova.
+         */
+        function showError(message) {
+            contentEl.innerHTML = ''
+            errorEl.textContent = message
+            errorEl.hidden = false
+            retryBtn.hidden = false
+        }
+
+        /**
+         * Escape HTML per prevenire XSS.
+         */
+        function escapeHtml(text) {
+            const div = document.createElement('div')
+            div.textContent = text
+            return div.innerHTML
+        }
+
+        // Pulsante Riprova
+        retryBtn.addEventListener('click', () => {
+            loadData()
+        })
+
+        // Caricamento iniziale
+        loadData()
+    </script>
 </body>
 </html>

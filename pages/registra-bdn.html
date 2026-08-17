@@ -15,27 +15,261 @@
 
     <main class="main-content">
         <section class="form-container">
-            <div class="form-group">
-                <label for="gatto-select">Seleziona gatto adottato</label>
-                <select id="gatto-select" name="gatto_select">
-                    <option value="">— Seleziona —</option>
-                </select>
-                <span class="error-msg" id="gatto-select-error"></span>
+            <!-- Lista gatti adottati -->
+            <h2 class="form-title">Seleziona gatto adottato</h2>
+
+            <div id="gatto-list-container">
+                <div class="search-results" id="gatto-list" role="listbox" aria-label="Lista gatti adottati">
+                    <!-- Populated dynamically -->
+                </div>
+                <p class="info-message" id="gatto-list-empty" hidden>Non ci sono gatti da registrare nella BDN</p>
+                <p class="info-message" id="gatto-list-loading">Caricamento gatti...</p>
             </div>
 
-            <form id="registra-bdn-form" novalidate>
+            <span class="error-msg" id="gatto-select-error"></span>
+
+            <!-- Form registrazione BDN (hidden until a cat is selected) -->
+            <form id="registra-bdn-form" novalidate hidden>
+                <h2 class="form-section-title">Gatto selezionato</h2>
+                <div class="form-group">
+                    <label for="chip-selezionato">Numero chip</label>
+                    <input type="text" id="chip-selezionato" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="nome-gatto-selezionato">Nome gatto</label>
+                    <input type="text" id="nome-gatto-selezionato" readonly>
+                </div>
+
+                <h2 class="form-section-title">Registrazione BDN</h2>
                 <div class="form-group">
                     <label for="data-registrazione">Data registrazione BDN</label>
                     <input type="date" id="data-registrazione" name="data_registrazione_bdn" required>
-                    <span class="error-msg" id="data-registrazione-error"></span>
+                    <span class="error-msg"></span>
                 </div>
+
                 <button type="submit" class="btn btn-primary btn-full">Conferma registrazione</button>
             </form>
-
-            <p id="empty-message" class="info-message" hidden>Non ci sono gatti da registrare.</p>
         </section>
     </main>
 
-    <script type="module" src="../js/app.js"></script>
+    <script type="module">
+        import { protectPage } from '../js/router.js'
+        import { initDarkMode, showToast, showFieldError, clearAllErrors, scrollToFirstError } from '../js/ui-utils.js'
+        import { supabase } from '../js/supabase-client.js'
+
+        // Inizializza dark mode
+        initDarkMode()
+
+        // Guard admin: solo admin può accedere a questa pagina
+        const ctx = await protectPage(['admin'])
+        if (!ctx) {
+            // protectPage ha già eseguito il redirect
+            throw new Error('Accesso negato')
+        }
+
+        // =====================================================================
+        // DOM References
+        // =====================================================================
+        const gattoList = document.getElementById('gatto-list')
+        const gattoListEmpty = document.getElementById('gatto-list-empty')
+        const gattoListLoading = document.getElementById('gatto-list-loading')
+        const gattoSelectError = document.getElementById('gatto-select-error')
+        const form = document.getElementById('registra-bdn-form')
+        const chipSelezionato = document.getElementById('chip-selezionato')
+        const nomeGattoSelezionato = document.getElementById('nome-gatto-selezionato')
+        const dataRegistrazioneInput = document.getElementById('data-registrazione')
+
+        // =====================================================================
+        // State
+        // =====================================================================
+        let allCats = []         // All adopted cats from DB
+        let selectedCat = null   // Currently selected cat object
+
+        // =====================================================================
+        // Init: set date defaults and load cats
+        // =====================================================================
+        const today = new Date().toISOString().split('T')[0]
+        dataRegistrazioneInput.value = today
+        dataRegistrazioneInput.max = today
+
+        // Load adopted cats
+        async function loadCats() {
+            gattoListLoading.hidden = false
+            gattoListEmpty.hidden = true
+            gattoList.innerHTML = ''
+
+            const { data, error } = await supabase
+                .from('chips')
+                .select('id, numero_chip, nome_gatto, data_impianto')
+                .eq('stato', 'adottato')
+                .order('nome_gatto', { ascending: true })
+
+            gattoListLoading.hidden = true
+
+            if (error) {
+                showToast('Errore nel caricamento dei gatti', 'error')
+                gattoListEmpty.textContent = 'Errore nel caricamento'
+                gattoListEmpty.hidden = false
+                return
+            }
+
+            allCats = data || []
+
+            if (allCats.length === 0) {
+                gattoListEmpty.hidden = false
+            } else {
+                renderCatList(allCats)
+            }
+        }
+
+        await loadCats()
+
+        // =====================================================================
+        // Render cat list
+        // =====================================================================
+        function renderCatList(cats) {
+            gattoList.innerHTML = ''
+            gattoListEmpty.hidden = true
+
+            if (cats.length === 0) {
+                gattoListEmpty.hidden = false
+                return
+            }
+
+            cats.forEach(cat => {
+                const item = document.createElement('div')
+                item.className = 'result-item'
+                item.role = 'option'
+                item.tabIndex = 0
+                item.dataset.catId = cat.id
+                item.innerHTML = `
+                    <span><strong>${escapeHtml(cat.nome_gatto || 'Senza nome')}</strong></span>
+                    <span style="font-size:0.75rem;color:#666">${escapeHtml(cat.numero_chip)}</span>
+                `
+                item.addEventListener('click', () => selectCat(cat))
+                item.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        selectCat(cat)
+                    }
+                })
+                gattoList.appendChild(item)
+            })
+        }
+
+        // =====================================================================
+        // Select a cat → show the registration form
+        // =====================================================================
+        function selectCat(cat) {
+            selectedCat = cat
+            chipSelezionato.value = cat.numero_chip
+            nomeGattoSelezionato.value = cat.nome_gatto || ''
+            gattoSelectError.textContent = ''
+
+            // Reset date to today
+            dataRegistrazioneInput.value = today
+            dataRegistrazioneInput.max = today
+
+            // Set min date to data_impianto if available
+            if (cat.data_impianto) {
+                dataRegistrazioneInput.min = cat.data_impianto
+            } else {
+                dataRegistrazioneInput.removeAttribute('min')
+            }
+
+            // Show the form
+            form.hidden = false
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+
+        // =====================================================================
+        // Form submission
+        // =====================================================================
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault()
+            clearAllErrors(form)
+
+            if (!selectedCat) {
+                gattoSelectError.textContent = 'Seleziona un gatto prima di procedere'
+                return
+            }
+
+            // Read form value
+            const dataRegistrazione = dataRegistrazioneInput.value
+
+            // Validate
+            let hasErrors = false
+
+            if (!dataRegistrazione) {
+                showFieldError(dataRegistrazioneInput, 'La data di registrazione è obbligatoria')
+                hasErrors = true
+            } else {
+                const regDate = new Date(dataRegistrazione)
+                const todayDate = new Date()
+                todayDate.setHours(0, 0, 0, 0)
+
+                // Not in the future
+                if (regDate > todayDate) {
+                    showFieldError(dataRegistrazioneInput, 'La data non può essere nel futuro')
+                    hasErrors = true
+                }
+
+                // Not before data_impianto
+                if (!hasErrors && selectedCat.data_impianto) {
+                    const impiantoDate = new Date(selectedCat.data_impianto)
+                    if (regDate < impiantoDate) {
+                        showFieldError(dataRegistrazioneInput, 'La data non può essere anteriore alla data di impianto')
+                        hasErrors = true
+                    }
+                }
+            }
+
+            if (hasErrors) {
+                scrollToFirstError(form)
+                return
+            }
+
+            // Submit to Supabase: update the chip to 'registrato'
+            const { error } = await supabase
+                .from('chips')
+                .update({
+                    stato: 'registrato',
+                    data_registrazione_bdn: dataRegistrazione
+                })
+                .eq('id', selectedCat.id)
+                .eq('stato', 'adottato')  // safety: only update if still adopted
+
+            if (error) {
+                if (error.message && error.message.includes('Transizione di stato non valida')) {
+                    showToast('Solo i gatti in stato "adottato" possono essere registrati nella BDN', 'error')
+                } else {
+                    showToast('Errore durante il salvataggio. Riprova.', 'error')
+                }
+                return
+            }
+
+            // Success
+            showToast('Gatto registrato in BDN con successo!', 'success')
+
+            // Reset state and reload list
+            selectedCat = null
+            form.reset()
+            form.hidden = true
+            dataRegistrazioneInput.value = today
+            dataRegistrazioneInput.max = today
+
+            await loadCats()
+        })
+
+        // =====================================================================
+        // Utilities
+        // =====================================================================
+        function escapeHtml(str) {
+            if (!str) return ''
+            const div = document.createElement('div')
+            div.textContent = str
+            return div.innerHTML
+        }
+    </script>
 </body>
 </html>

@@ -14,43 +14,292 @@
     </header>
 
     <main class="main-content">
+        <!-- Form creazione account guest -->
         <section class="form-container">
             <h2 class="form-title">Crea account guest</h2>
             <form id="crea-guest-form" novalidate>
                 <div class="form-group">
                     <label for="guest-email">Email</label>
-                    <input type="email" id="guest-email" name="email" required placeholder="guest@esempio.it">
+                    <input type="email" id="guest-email" name="email"
+                           required placeholder="guest@esempio.it"
+                           autocomplete="off">
                     <span class="error-msg" id="guest-email-error"></span>
                 </div>
                 <div class="form-group">
-                    <label for="guest-password">Password</label>
-                    <input type="password" id="guest-password" name="password" required>
+                    <label for="guest-password">Password (min. 6 caratteri)</label>
+                    <input type="password" id="guest-password" name="password"
+                           required minlength="6"
+                           autocomplete="new-password">
                     <span class="error-msg" id="guest-password-error"></span>
                 </div>
                 <div class="form-group">
                     <label for="guest-nome">Nome visualizzato</label>
-                    <input type="text" id="guest-nome" name="display_name" required>
+                    <input type="text" id="guest-nome" name="display_name"
+                           required placeholder="Nome utente">
                     <span class="error-msg" id="guest-nome-error"></span>
                 </div>
                 <div class="form-group">
                     <label for="guest-associazione">Associazione</label>
                     <select id="guest-associazione" name="associazione_id" required>
-                        <option value="">— Seleziona —</option>
+                        <option value="">— Seleziona associazione —</option>
                     </select>
                     <span class="error-msg" id="guest-associazione-error"></span>
                 </div>
-                <button type="submit" id="btn-crea-guest" class="btn btn-primary btn-full" disabled>Crea account</button>
+                <button type="submit" id="btn-crea-guest" class="btn btn-primary btn-full" disabled>
+                    Crea account
+                </button>
             </form>
         </section>
 
-        <section class="form-container">
+        <!-- Lista utenti guest esistenti -->
+        <section class="form-container" style="margin-top: 16px;">
             <h2 class="form-title">Utenti guest esistenti</h2>
             <div id="guest-list" class="guest-list">
-                <!-- Lista utenti caricata dinamicamente -->
+                <p class="info-message" id="guest-list-loading">Caricamento utenti...</p>
+                <p class="info-message" id="guest-list-empty" hidden>Nessun utente guest presente</p>
             </div>
         </section>
     </main>
 
-    <script type="module" src="../js/app.js"></script>
+    <script type="module">
+        import { protectPage } from '../js/router.js'
+        import { initDarkMode, showToast, showFieldError, clearAllErrors, scrollToFirstError } from '../js/ui-utils.js'
+        import { supabase } from '../js/supabase-client.js'
+
+        // Inizializza dark mode
+        initDarkMode()
+
+        // Guard admin: solo admin può accedere a questa pagina
+        const ctx = await protectPage(['admin'])
+        if (!ctx) {
+            // protectPage ha già eseguito il redirect
+            throw new Error('Accesso negato')
+        }
+
+        // =====================================================================
+        // DOM References
+        // =====================================================================
+        const form = document.getElementById('crea-guest-form')
+        const emailInput = document.getElementById('guest-email')
+        const passwordInput = document.getElementById('guest-password')
+        const nomeInput = document.getElementById('guest-nome')
+        const associazioneSelect = document.getElementById('guest-associazione')
+        const btnCrea = document.getElementById('btn-crea-guest')
+        const guestListContainer = document.getElementById('guest-list')
+        const guestListLoading = document.getElementById('guest-list-loading')
+        const guestListEmpty = document.getElementById('guest-list-empty')
+
+        // =====================================================================
+        // Abilita/disabilita pulsante creazione
+        // =====================================================================
+        function updateSubmitButton() {
+            const allFilled = emailInput.value.trim() !== '' &&
+                              passwordInput.value.length >= 6 &&
+                              nomeInput.value.trim() !== '' &&
+                              associazioneSelect.value !== ''
+            btnCrea.disabled = !allFilled
+        }
+
+        emailInput.addEventListener('input', updateSubmitButton)
+        passwordInput.addEventListener('input', updateSubmitButton)
+        nomeInput.addEventListener('input', updateSubmitButton)
+        associazioneSelect.addEventListener('change', updateSubmitButton)
+
+        // =====================================================================
+        // Carica associazioni nel select
+        // =====================================================================
+        async function loadAssociazioni() {
+            const { data, error } = await supabase
+                .from('associazioni')
+                .select('id, nome')
+                .order('nome', { ascending: true })
+
+            if (error || !data) {
+                showToast('Errore nel caricamento delle associazioni', 'error')
+                return
+            }
+
+            data.forEach(assoc => {
+                const option = document.createElement('option')
+                option.value = assoc.id
+                option.textContent = assoc.nome
+                associazioneSelect.appendChild(option)
+            })
+        }
+
+        // =====================================================================
+        // Carica lista utenti guest esistenti
+        // =====================================================================
+        async function loadGuestList() {
+            guestListLoading.hidden = false
+            guestListEmpty.hidden = true
+
+            // Remove existing guest items (keep loading/empty messages)
+            const existingItems = guestListContainer.querySelectorAll('.guest-item')
+            existingItems.forEach(item => item.remove())
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, display_name, active, associazione_id, associazioni(nome)')
+                .eq('role', 'guest')
+                .order('display_name', { ascending: true })
+
+            guestListLoading.hidden = true
+
+            if (error) {
+                showToast('Errore nel caricamento degli utenti', 'error')
+                guestListEmpty.textContent = 'Errore nel caricamento'
+                guestListEmpty.hidden = false
+                return
+            }
+
+            if (!data || data.length === 0) {
+                guestListEmpty.hidden = false
+                return
+            }
+
+            data.forEach(guest => {
+                const assocNome = guest.associazioni ? guest.associazioni.nome : 'N/D'
+                const item = document.createElement('div')
+                item.className = 'guest-item'
+                item.innerHTML = `
+                    <div class="guest-info">
+                        <strong>${escapeHtml(guest.display_name)}</strong><br>
+                        <span style="font-size:0.8rem;color:#666">
+                            ${escapeHtml(assocNome)}
+                            ${guest.active
+                                ? ' — <span style="color:#2e7d32">Attivo</span>'
+                                : ' — <span style="color:#999">Disattivato</span>'}
+                        </span>
+                    </div>
+                    ${guest.active
+                        ? `<button type="button" class="btn btn-danger btn-disattiva" data-user-id="${guest.id}" data-user-name="${escapeHtml(guest.display_name)}">Disattiva</button>`
+                        : '<span style="font-size:0.8rem;color:#999;padding:8px">Inattivo</span>'}
+                `
+                guestListContainer.appendChild(item)
+            })
+
+            // Attach event listeners to disable buttons
+            const disableButtons = guestListContainer.querySelectorAll('.btn-disattiva')
+            disableButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const userId = btn.dataset.userId
+                    const userName = btn.dataset.userName
+                    handleDisableGuest(userId, userName)
+                })
+            })
+        }
+
+        // =====================================================================
+        // Creazione account guest
+        // =====================================================================
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault()
+            clearAllErrors(form)
+
+            const email = emailInput.value.trim()
+            const password = passwordInput.value
+            const displayName = nomeInput.value.trim()
+            const associazioneId = associazioneSelect.value
+
+            // Validazione
+            let hasErrors = false
+
+            if (!email) {
+                showFieldError(emailInput, 'L\'email è obbligatoria')
+                hasErrors = true
+            }
+
+            if (!password || password.length < 6) {
+                showFieldError(passwordInput, 'La password deve avere almeno 6 caratteri')
+                hasErrors = true
+            }
+
+            if (!displayName) {
+                showFieldError(nomeInput, 'Il nome visualizzato è obbligatorio')
+                hasErrors = true
+            }
+
+            if (!associazioneId) {
+                showFieldError(associazioneSelect, 'Seleziona un\'associazione')
+                hasErrors = true
+            }
+
+            if (hasErrors) {
+                scrollToFirstError(form)
+                return
+            }
+
+            // Disabilita il pulsante durante l'invio
+            btnCrea.disabled = true
+            btnCrea.textContent = 'Creazione in corso...'
+
+            const { data, error } = await supabase.functions.invoke('create-guest-user', {
+                body: {
+                    email,
+                    password,
+                    display_name: displayName,
+                    associazione_id: associazioneId
+                }
+            })
+
+            btnCrea.textContent = 'Crea account'
+            updateSubmitButton()
+
+            if (error || (data && data.error)) {
+                const errorMsg = data?.error || error?.message || ''
+                if (errorMsg.includes('email esiste già') || errorMsg.includes('already exists')) {
+                    showToast('Un utente con questa email esiste già', 'error')
+                } else if (errorMsg) {
+                    showToast(errorMsg, 'error')
+                } else {
+                    showToast('Errore di comunicazione con il server. Riprova.', 'error')
+                }
+                return
+            }
+
+            // Successo
+            showToast('Account guest creato con successo', 'success')
+            form.reset()
+            updateSubmitButton()
+            await loadGuestList()
+        })
+
+        // =====================================================================
+        // Disattivazione account guest
+        // =====================================================================
+        async function handleDisableGuest(userId, userName) {
+            const confirmed = confirm(`Disattivare l'account di "${userName}"?`)
+            if (!confirmed) return
+
+            const { data, error } = await supabase.functions.invoke('disable-guest-user', {
+                body: { user_id: userId }
+            })
+
+            if (error || (data && data.error)) {
+                const errorMsg = data?.error || error?.message || ''
+                showToast(errorMsg || 'Errore durante la disattivazione. Riprova.', 'error')
+                return
+            }
+
+            showToast('Account disattivato con successo', 'success')
+            await loadGuestList()
+        }
+
+        // =====================================================================
+        // Utility: escape HTML
+        // =====================================================================
+        function escapeHtml(str) {
+            if (!str) return ''
+            const div = document.createElement('div')
+            div.textContent = str
+            return div.innerHTML
+        }
+
+        // =====================================================================
+        // Init: carica dati
+        // =====================================================================
+        await Promise.all([loadAssociazioni(), loadGuestList()])
+    </script>
 </body>
 </html>

@@ -15,31 +15,784 @@
 
     <main class="main-content">
         <section class="form-container">
+            <!-- Search input -->
             <div class="form-group">
                 <label for="search-input">Cerca per numero chip (min 3 caratteri)</label>
-                <input type="text" id="search-input" name="search" inputmode="numeric" placeholder="Inserisci numero chip...">
+                <input type="text" id="search-input" name="search" inputmode="numeric"
+                       placeholder="Inserisci numero chip..." autocomplete="off">
             </div>
 
-            <div id="search-results" class="search-results">
-                <!-- Risultati della ricerca -->
+            <!-- Results list -->
+            <div class="search-results" id="search-results" role="listbox" aria-label="Risultati ricerca chip">
+                <!-- Populated dynamically -->
             </div>
             <p id="no-results" class="info-message" hidden>Nessun chip corrisponde al criterio inserito.</p>
+            <p id="loading-msg" class="info-message" hidden>Ricerca in corso...</p>
 
-            <!-- Dettaglio chip (mostrato dopo selezione) -->
-            <section id="chip-detail" class="chip-detail" hidden>
-                <h3 class="form-section-title">Dettaglio chip</h3>
+            <!-- Chip detail form (hidden until a chip is selected) -->
+            <section id="chip-detail" hidden>
+                <h2 class="form-section-title">Dettaglio chip</h2>
+
+                <button type="button" id="btn-back-to-list" class="btn btn-secondary btn-full" style="margin-bottom:16px;">
+                    ← Torna alla lista
+                </button>
+
                 <form id="modifica-chip-form" novalidate>
+                    <!-- Chip info (readonly) -->
                     <div class="form-group">
                         <label for="detail-numero-chip">Numero chip</label>
                         <input type="text" id="detail-numero-chip" readonly>
                     </div>
-                    <!-- I campi di dettaglio vengono popolati dinamicamente -->
+
+                    <div class="form-group">
+                        <label for="detail-stato">Stato</label>
+                        <input type="text" id="detail-stato" readonly>
+                    </div>
+
+                    <!-- Dati carico -->
+                    <h3 class="form-section-title">Dati caricamento</h3>
+
+                    <div class="form-group">
+                        <label for="detail-data-carico">Data di carico</label>
+                        <input type="date" id="detail-data-carico" name="data_carico">
+                        <span class="error-msg"></span>
+                    </div>
+
+                    <div class="form-group" id="detail-associazione-group">
+                        <label for="detail-associazione">Associazione</label>
+                        <select id="detail-associazione" name="associazione_id">
+                            <option value="">— Nessuna —</option>
+                        </select>
+                        <span class="error-msg"></span>
+                    </div>
+
+                    <!-- Dati gatto (shown from state impiantato+) -->
+                    <div id="section-gatto" hidden>
+                        <h3 class="form-section-title">Dati del gatto</h3>
+
+                        <div class="form-group">
+                            <label for="detail-nome-gatto">Nome gatto</label>
+                            <input type="text" id="detail-nome-gatto" name="nome_gatto" maxlength="50">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-colore-mantello">Colore mantello</label>
+                            <input type="text" id="detail-colore-mantello" name="colore_mantello" maxlength="50">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-data-nascita-gatto">Data di nascita gatto</label>
+                            <input type="date" id="detail-data-nascita-gatto" name="data_nascita_gatto">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-genere-gatto">Genere</label>
+                            <select id="detail-genere-gatto" name="genere_gatto">
+                                <option value="">— Seleziona —</option>
+                                <option value="maschio">Maschio</option>
+                                <option value="femmina">Femmina</option>
+                            </select>
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-data-impianto">Data di impianto</label>
+                            <input type="date" id="detail-data-impianto" name="data_impianto">
+                            <span class="error-msg"></span>
+                        </div>
+                    </div>
+
+                    <!-- Dati adozione (shown from state adottato+) -->
+                    <div id="section-adozione" hidden>
+                        <h3 class="form-section-title">Dati adozione</h3>
+
+                        <div class="form-group">
+                            <label for="detail-nome-gatto-adozione">Nome gatto (post-adozione)</label>
+                            <input type="text" id="detail-nome-gatto-adozione" name="nome_gatto_adozione" maxlength="50">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-adottante-nome">Nome adottante</label>
+                            <input type="text" id="detail-adottante-nome" name="adottante_nome" maxlength="50">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-adottante-cognome">Cognome adottante</label>
+                            <input type="text" id="detail-adottante-cognome" name="adottante_cognome" maxlength="50">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-adottante-cf">Codice fiscale</label>
+                            <input type="text" id="detail-adottante-cf" name="adottante_cf" maxlength="16"
+                                   autocapitalize="characters">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-adottante-data-nascita">Data nascita adottante</label>
+                            <input type="date" id="detail-adottante-data-nascita" name="adottante_data_nascita">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-adottante-residenza">Residenza</label>
+                            <input type="text" id="detail-adottante-residenza" name="adottante_residenza" maxlength="200">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-adottante-telefono">Telefono</label>
+                            <input type="tel" id="detail-adottante-telefono" name="adottante_telefono" maxlength="20">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-adottante-documento">Numero documento</label>
+                            <input type="text" id="detail-adottante-documento" name="adottante_numero_documento">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-adottante-scadenza-doc">Scadenza documento</label>
+                            <input type="date" id="detail-adottante-scadenza-doc" name="adottante_scadenza_documento">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-numero-scheda">Numero scheda</label>
+                            <input type="text" id="detail-numero-scheda" name="numero_scheda">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group form-group-checkbox">
+                            <input type="checkbox" id="detail-privacy" name="privacy_autorizzata">
+                            <label for="detail-privacy">Privacy autorizzata</label>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detail-data-adozione">Data di adozione</label>
+                            <input type="date" id="detail-data-adozione" name="data_adozione">
+                            <span class="error-msg"></span>
+                        </div>
+                    </div>
+
+                    <!-- Dati BDN (shown from state registrato) -->
+                    <div id="section-bdn" hidden>
+                        <h3 class="form-section-title">Registrazione BDN</h3>
+
+                        <div class="form-group">
+                            <label for="detail-data-registrazione-bdn">Data registrazione BDN</label>
+                            <input type="date" id="detail-data-registrazione-bdn" name="data_registrazione_bdn">
+                            <span class="error-msg"></span>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn btn-primary btn-full">Salva modifiche</button>
                 </form>
             </section>
         </section>
     </main>
 
-    <script type="module" src="../js/app.js"></script>
+    <script type="module">
+        import { protectPage } from '../js/router.js'
+        import { initDarkMode, showToast, showFieldError, clearAllErrors, scrollToFirstError } from '../js/ui-utils.js'
+        import { validateCodiceFiscale } from '../js/validation.js'
+        import { supabase } from '../js/supabase-client.js'
+
+        // Inizializza dark mode
+        initDarkMode()
+
+        // Guard: admin e guest possono accedere
+        const ctx = await protectPage(['admin', 'guest'])
+        if (!ctx) throw new Error('Accesso negato')
+
+        const { role, associazione: userAssociazioneId } = ctx
+
+        // =====================================================================
+        // DOM References
+        // =====================================================================
+        const searchInput = document.getElementById('search-input')
+        const searchResults = document.getElementById('search-results')
+        const noResults = document.getElementById('no-results')
+        const loadingMsg = document.getElementById('loading-msg')
+        const chipDetail = document.getElementById('chip-detail')
+        const form = document.getElementById('modifica-chip-form')
+        const btnBackToList = document.getElementById('btn-back-to-list')
+
+        // Detail fields
+        const detailNumeroChip = document.getElementById('detail-numero-chip')
+        const detailStato = document.getElementById('detail-stato')
+        const detailDataCarico = document.getElementById('detail-data-carico')
+        const detailAssociazione = document.getElementById('detail-associazione')
+        const associazioneGroup = document.getElementById('detail-associazione-group')
+
+        // Sections
+        const sectionGatto = document.getElementById('section-gatto')
+        const sectionAdozione = document.getElementById('section-adozione')
+        const sectionBdn = document.getElementById('section-bdn')
+
+        // =====================================================================
+        // State
+        // =====================================================================
+        let selectedChip = null      // Currently selected chip full record
+        let debounceTimer = null     // Debounce timer for search input
+        let associazioni = []        // Cached associations list
+
+        // State index for section visibility
+        const STATO_INDEX = { disponibile: 0, impiantato: 1, adottato: 2, registrato: 3 }
+
+        // =====================================================================
+        // Init: load associations for admin
+        // =====================================================================
+        async function loadAssociazioni() {
+            const { data, error } = await supabase
+                .from('associazioni')
+                .select('id, nome')
+                .order('nome', { ascending: true })
+
+            if (!error && data) {
+                associazioni = data
+            }
+        }
+
+        async function setupAssociazioneField() {
+            if (role === 'admin') {
+                // Admin: populate select with all associations
+                const select = detailAssociazione
+                associazioni.forEach(assoc => {
+                    const option = document.createElement('option')
+                    option.value = assoc.id
+                    option.textContent = assoc.nome
+                    select.appendChild(option)
+                })
+            } else {
+                // Guest: replace select with readonly input
+                const assoc = associazioni.find(a => a.id === userAssociazioneId)
+                const assocName = assoc ? assoc.nome : 'N/D'
+
+                const input = document.createElement('input')
+                input.type = 'text'
+                input.id = 'detail-associazione'
+                input.name = 'associazione_id'
+                input.value = assocName
+                input.readOnly = true
+                input.dataset.assocId = userAssociazioneId || ''
+                detailAssociazione.replaceWith(input)
+            }
+        }
+
+        await loadAssociazioni()
+        await setupAssociazioneField()
+
+        // =====================================================================
+        // Search with debounce (300ms)
+        // =====================================================================
+        searchInput.addEventListener('input', () => {
+            const query = searchInput.value.trim()
+
+            // Clear previous results if less than 3 chars
+            if (query.length < 3) {
+                searchResults.innerHTML = ''
+                noResults.hidden = true
+                loadingMsg.hidden = true
+                return
+            }
+
+            // Debounce
+            clearTimeout(debounceTimer)
+            debounceTimer = setTimeout(() => {
+                performSearch(query)
+            }, 300)
+        })
+
+        async function performSearch(query) {
+            loadingMsg.hidden = false
+            noResults.hidden = true
+            searchResults.innerHTML = ''
+
+            // Build query
+            let dbQuery = supabase
+                .from('chips')
+                .select('id, numero_chip, stato, nome_gatto, associazione_id')
+                .ilike('numero_chip', `%${query}%`)
+                .order('numero_chip', { ascending: true })
+                .limit(50)
+
+            // Guest filter: only impiantato+ of own association
+            if (role === 'guest') {
+                dbQuery = dbQuery
+                    .neq('stato', 'disponibile')
+                    .eq('associazione_id', userAssociazioneId)
+            }
+
+            const { data, error } = await dbQuery
+
+            loadingMsg.hidden = true
+
+            if (error) {
+                showToast('Errore durante la ricerca. Riprova.', 'error')
+                return
+            }
+
+            if (!data || data.length === 0) {
+                noResults.hidden = false
+                return
+            }
+
+            renderResults(data)
+        }
+
+        // =====================================================================
+        // Render search results
+        // =====================================================================
+        function renderResults(chips) {
+            searchResults.innerHTML = ''
+            noResults.hidden = true
+
+            chips.forEach(chip => {
+                const item = document.createElement('div')
+                item.className = 'result-item'
+                item.role = 'option'
+                item.tabIndex = 0
+                item.dataset.chipId = chip.id
+
+                const statoLabel = getStatoLabel(chip.stato)
+                const nomeGatto = chip.nome_gatto ? ` — ${escapeHtml(chip.nome_gatto)}` : ''
+
+                item.innerHTML = `
+                    <span><strong>${escapeHtml(chip.numero_chip)}</strong>${nomeGatto}</span>
+                    <span class="stato-badge stato-${chip.stato}">${statoLabel}</span>
+                `
+                item.addEventListener('click', () => loadChipDetail(chip.id))
+                item.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        loadChipDetail(chip.id)
+                    }
+                })
+                searchResults.appendChild(item)
+            })
+        }
+
+        function getStatoLabel(stato) {
+            const labels = {
+                disponibile: 'Disponibile',
+                impiantato: 'Impiantato',
+                adottato: 'Adottato',
+                registrato: 'Registrato'
+            }
+            return labels[stato] || stato
+        }
+
+        /** Escape HTML to prevent XSS */
+        function escapeHtml(str) {
+            if (!str) return ''
+            const div = document.createElement('div')
+            div.textContent = str
+            return div.innerHTML
+        }
+
+        // =====================================================================
+        // Load chip detail
+        // =====================================================================
+        async function loadChipDetail(chipId) {
+            const { data, error } = await supabase
+                .from('chips')
+                .select('*')
+                .eq('id', chipId)
+                .single()
+
+            if (error || !data) {
+                showToast('Errore nel caricamento del dettaglio chip.', 'error')
+                return
+            }
+
+            selectedChip = data
+            showDetailForm(data)
+        }
+
+        // =====================================================================
+        // Show detail form
+        // =====================================================================
+        function showDetailForm(chip) {
+            // Hide search, show detail
+            searchInput.parentElement.style.display = 'none'
+            searchResults.style.display = 'none'
+            noResults.hidden = true
+            loadingMsg.hidden = true
+            chipDetail.hidden = false
+
+            clearAllErrors(form)
+
+            const statoIdx = STATO_INDEX[chip.stato] ?? -1
+
+            // Readonly fields
+            detailNumeroChip.value = chip.numero_chip
+            detailStato.value = getStatoLabel(chip.stato)
+
+            // Data carico
+            detailDataCarico.value = chip.data_carico || ''
+            const today = new Date().toISOString().split('T')[0]
+            detailDataCarico.max = today
+
+            // Associazione
+            const assocField = document.getElementById('detail-associazione')
+            if (role === 'admin') {
+                assocField.value = chip.associazione_id || ''
+            } else {
+                // Guest: readonly, already set
+            }
+
+            // Show/hide sections based on state
+            sectionGatto.hidden = statoIdx < 1
+            sectionAdozione.hidden = statoIdx < 2
+            sectionBdn.hidden = statoIdx < 3
+
+            // Fill cat fields
+            if (statoIdx >= 1) {
+                document.getElementById('detail-nome-gatto').value = chip.nome_gatto || ''
+                document.getElementById('detail-colore-mantello').value = chip.colore_mantello || ''
+                document.getElementById('detail-data-nascita-gatto').value = chip.data_nascita_gatto || ''
+                document.getElementById('detail-genere-gatto').value = chip.genere_gatto || ''
+                document.getElementById('detail-data-impianto').value = chip.data_impianto || ''
+
+                // Set max dates
+                document.getElementById('detail-data-nascita-gatto').max = today
+                document.getElementById('detail-data-impianto').max = today
+            }
+
+            // Fill adoption fields
+            if (statoIdx >= 2) {
+                document.getElementById('detail-nome-gatto-adozione').value = chip.nome_gatto_adozione || ''
+                document.getElementById('detail-adottante-nome').value = chip.adottante_nome || ''
+                document.getElementById('detail-adottante-cognome').value = chip.adottante_cognome || ''
+                document.getElementById('detail-adottante-cf').value = chip.adottante_cf || ''
+                document.getElementById('detail-adottante-data-nascita').value = chip.adottante_data_nascita || ''
+                document.getElementById('detail-adottante-residenza').value = chip.adottante_residenza || ''
+                document.getElementById('detail-adottante-telefono').value = chip.adottante_telefono || ''
+                document.getElementById('detail-adottante-documento').value = chip.adottante_numero_documento || ''
+                document.getElementById('detail-adottante-scadenza-doc').value = chip.adottante_scadenza_documento || ''
+                document.getElementById('detail-numero-scheda').value = chip.numero_scheda || ''
+                document.getElementById('detail-privacy').checked = chip.privacy_autorizzata || false
+                document.getElementById('detail-data-adozione').value = chip.data_adozione || ''
+
+                document.getElementById('detail-data-adozione').max = today
+            }
+
+            // Fill BDN fields
+            if (statoIdx >= 3) {
+                document.getElementById('detail-data-registrazione-bdn').value = chip.data_registrazione_bdn || ''
+                document.getElementById('detail-data-registrazione-bdn').max = today
+            }
+
+            chipDetail.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+
+        // =====================================================================
+        // Back to list
+        // =====================================================================
+        btnBackToList.addEventListener('click', () => {
+            chipDetail.hidden = true
+            searchInput.parentElement.style.display = ''
+            searchResults.style.display = ''
+            selectedChip = null
+
+            // Re-show results if there was a previous search
+            if (searchInput.value.trim().length >= 3) {
+                performSearch(searchInput.value.trim())
+            }
+        })
+
+        // =====================================================================
+        // Form submission (save modifications)
+        // =====================================================================
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault()
+            clearAllErrors(form)
+
+            if (!selectedChip) return
+
+            const statoIdx = STATO_INDEX[selectedChip.stato] ?? -1
+            let hasErrors = false
+            const updateData = {}
+
+            // ========== Validate and collect: data_carico ==========
+            const dataCarico = detailDataCarico.value
+            if (dataCarico) {
+                const todayDate = new Date()
+                todayDate.setHours(0, 0, 0, 0)
+                if (new Date(dataCarico) > todayDate) {
+                    showFieldError(detailDataCarico, 'La data non può essere nel futuro')
+                    hasErrors = true
+                } else {
+                    updateData.data_carico = dataCarico
+                }
+            } else {
+                showFieldError(detailDataCarico, 'La data di carico è obbligatoria')
+                hasErrors = true
+            }
+
+            // ========== Validate: associazione ==========
+            const assocField = document.getElementById('detail-associazione')
+            if (role === 'admin') {
+                const assocValue = assocField.value
+                updateData.associazione_id = assocValue || null
+            }
+            // Guest cannot change association
+
+            // ========== Validate and collect: cat fields (if state >= impiantato) ==========
+            if (statoIdx >= 1) {
+                const nomeGatto = document.getElementById('detail-nome-gatto').value.trim()
+                const coloreMantello = document.getElementById('detail-colore-mantello').value.trim()
+                const dataNascitaGatto = document.getElementById('detail-data-nascita-gatto').value
+                const genereGatto = document.getElementById('detail-genere-gatto').value
+                const dataImpianto = document.getElementById('detail-data-impianto').value
+
+                // Nome gatto: required
+                const nomeGattoEl = document.getElementById('detail-nome-gatto')
+                if (!nomeGatto) {
+                    showFieldError(nomeGattoEl, 'Il nome del gatto è obbligatorio')
+                    hasErrors = true
+                } else if (nomeGatto.length > 50) {
+                    showFieldError(nomeGattoEl, 'Massimo 50 caratteri')
+                    hasErrors = true
+                } else {
+                    updateData.nome_gatto = nomeGatto
+                }
+
+                // Colore mantello: required
+                const coloreEl = document.getElementById('detail-colore-mantello')
+                if (!coloreMantello) {
+                    showFieldError(coloreEl, 'Il colore del mantello è obbligatorio')
+                    hasErrors = true
+                } else if (coloreMantello.length > 50) {
+                    showFieldError(coloreEl, 'Massimo 50 caratteri')
+                    hasErrors = true
+                } else {
+                    updateData.colore_mantello = coloreMantello
+                }
+
+                // Data nascita gatto: required, not future
+                const dataNascitaEl = document.getElementById('detail-data-nascita-gatto')
+                if (!dataNascitaGatto) {
+                    showFieldError(dataNascitaEl, 'La data di nascita è obbligatoria')
+                    hasErrors = true
+                } else {
+                    const todayDate = new Date()
+                    todayDate.setHours(0, 0, 0, 0)
+                    if (new Date(dataNascitaGatto) > todayDate) {
+                        showFieldError(dataNascitaEl, 'La data non può essere nel futuro')
+                        hasErrors = true
+                    } else {
+                        updateData.data_nascita_gatto = dataNascitaGatto
+                    }
+                }
+
+                // Genere: required
+                const genereEl = document.getElementById('detail-genere-gatto')
+                if (!genereGatto) {
+                    showFieldError(genereEl, 'Seleziona il genere')
+                    hasErrors = true
+                } else {
+                    updateData.genere_gatto = genereGatto
+                }
+
+                // Data impianto: required, not future
+                const dataImpiantoEl = document.getElementById('detail-data-impianto')
+                if (!dataImpianto) {
+                    showFieldError(dataImpiantoEl, 'La data di impianto è obbligatoria')
+                    hasErrors = true
+                } else {
+                    const todayDate = new Date()
+                    todayDate.setHours(0, 0, 0, 0)
+                    if (new Date(dataImpianto) > todayDate) {
+                        showFieldError(dataImpiantoEl, 'La data non può essere nel futuro')
+                        hasErrors = true
+                    } else {
+                        updateData.data_impianto = dataImpianto
+                    }
+                }
+            }
+
+            // ========== Validate and collect: adoption fields (if state >= adottato) ==========
+            if (statoIdx >= 2) {
+                const nomeGattoAdozione = document.getElementById('detail-nome-gatto-adozione').value.trim()
+                const adottanteNome = document.getElementById('detail-adottante-nome').value.trim()
+                const adottanteCognome = document.getElementById('detail-adottante-cognome').value.trim()
+                const adottanteCf = document.getElementById('detail-adottante-cf').value.trim().toUpperCase()
+                const adottanteDataNascita = document.getElementById('detail-adottante-data-nascita').value
+                const adottanteResidenza = document.getElementById('detail-adottante-residenza').value.trim()
+                const adottanteTelefono = document.getElementById('detail-adottante-telefono').value.trim()
+                const adottanteDocumento = document.getElementById('detail-adottante-documento').value.trim()
+                const adottanteScadenzaDoc = document.getElementById('detail-adottante-scadenza-doc').value
+                const numeroScheda = document.getElementById('detail-numero-scheda').value.trim()
+                const privacyChecked = document.getElementById('detail-privacy').checked
+                const dataAdozione = document.getElementById('detail-data-adozione').value
+
+                updateData.nome_gatto_adozione = nomeGattoAdozione || null
+
+                // Adottante nome: required
+                const nomeAdEl = document.getElementById('detail-adottante-nome')
+                if (!adottanteNome) {
+                    showFieldError(nomeAdEl, 'Il nome dell\'adottante è obbligatorio')
+                    hasErrors = true
+                } else if (adottanteNome.length > 50) {
+                    showFieldError(nomeAdEl, 'Massimo 50 caratteri')
+                    hasErrors = true
+                } else {
+                    updateData.adottante_nome = adottanteNome
+                }
+
+                // Adottante cognome: required
+                const cognomeEl = document.getElementById('detail-adottante-cognome')
+                if (!adottanteCognome) {
+                    showFieldError(cognomeEl, 'Il cognome dell\'adottante è obbligatorio')
+                    hasErrors = true
+                } else if (adottanteCognome.length > 50) {
+                    showFieldError(cognomeEl, 'Massimo 50 caratteri')
+                    hasErrors = true
+                } else {
+                    updateData.adottante_cognome = adottanteCognome
+                }
+
+                // Codice fiscale: required, validate
+                const cfEl = document.getElementById('detail-adottante-cf')
+                if (!adottanteCf) {
+                    showFieldError(cfEl, 'Il codice fiscale è obbligatorio')
+                    hasErrors = true
+                } else {
+                    const cfResult = validateCodiceFiscale(adottanteCf)
+                    if (!cfResult.valid) {
+                        showFieldError(cfEl, cfResult.error)
+                        hasErrors = true
+                    } else {
+                        updateData.adottante_cf = adottanteCf
+                    }
+                }
+
+                // Data nascita adottante: required
+                const dataNascitaAdEl = document.getElementById('detail-adottante-data-nascita')
+                if (!adottanteDataNascita) {
+                    showFieldError(dataNascitaAdEl, 'La data di nascita è obbligatoria')
+                    hasErrors = true
+                } else {
+                    updateData.adottante_data_nascita = adottanteDataNascita
+                }
+
+                // Residenza: required, max 200
+                const residenzaEl = document.getElementById('detail-adottante-residenza')
+                if (!adottanteResidenza) {
+                    showFieldError(residenzaEl, 'La residenza è obbligatoria')
+                    hasErrors = true
+                } else if (adottanteResidenza.length > 200) {
+                    showFieldError(residenzaEl, 'Massimo 200 caratteri')
+                    hasErrors = true
+                } else {
+                    updateData.adottante_residenza = adottanteResidenza
+                }
+
+                // Telefono: required, max 20
+                const telefonoEl = document.getElementById('detail-adottante-telefono')
+                if (!adottanteTelefono) {
+                    showFieldError(telefonoEl, 'Il numero di telefono è obbligatorio')
+                    hasErrors = true
+                } else if (adottanteTelefono.length > 20) {
+                    showFieldError(telefonoEl, 'Massimo 20 caratteri')
+                    hasErrors = true
+                } else {
+                    updateData.adottante_telefono = adottanteTelefono
+                }
+
+                // Optional fields
+                updateData.adottante_numero_documento = adottanteDocumento || null
+                updateData.adottante_scadenza_documento = adottanteScadenzaDoc || null
+
+                // Numero scheda: required
+                const schedaEl = document.getElementById('detail-numero-scheda')
+                if (!numeroScheda) {
+                    showFieldError(schedaEl, 'Il numero scheda è obbligatorio')
+                    hasErrors = true
+                } else {
+                    updateData.numero_scheda = numeroScheda
+                }
+
+                // Privacy
+                updateData.privacy_autorizzata = privacyChecked
+
+                // Data adozione: required, not future
+                const dataAdozioneEl = document.getElementById('detail-data-adozione')
+                if (!dataAdozione) {
+                    showFieldError(dataAdozioneEl, 'La data di adozione è obbligatoria')
+                    hasErrors = true
+                } else {
+                    const todayDate = new Date()
+                    todayDate.setHours(0, 0, 0, 0)
+                    if (new Date(dataAdozione) > todayDate) {
+                        showFieldError(dataAdozioneEl, 'La data non può essere nel futuro')
+                        hasErrors = true
+                    } else {
+                        updateData.data_adozione = dataAdozione
+                    }
+                }
+            }
+
+            // ========== Validate and collect: BDN fields (if state = registrato) ==========
+            if (statoIdx >= 3) {
+                const dataRegBdn = document.getElementById('detail-data-registrazione-bdn').value
+                const dataRegBdnEl = document.getElementById('detail-data-registrazione-bdn')
+
+                if (!dataRegBdn) {
+                    showFieldError(dataRegBdnEl, 'La data di registrazione BDN è obbligatoria')
+                    hasErrors = true
+                } else {
+                    const todayDate = new Date()
+                    todayDate.setHours(0, 0, 0, 0)
+                    if (new Date(dataRegBdn) > todayDate) {
+                        showFieldError(dataRegBdnEl, 'La data non può essere nel futuro')
+                        hasErrors = true
+                    } else {
+                        // Check: not before data_impianto
+                        const dataImpianto = document.getElementById('detail-data-impianto')
+                            ? document.getElementById('detail-data-impianto').value
+                            : null
+                        if (dataImpianto && new Date(dataRegBdn) < new Date(dataImpianto)) {
+                            showFieldError(dataRegBdnEl, 'La data non può essere anteriore alla data di impianto')
+                            hasErrors = true
+                        } else {
+                            updateData.data_registrazione_bdn = dataRegBdn
+                        }
+                    }
+                }
+            }
+
+            if (hasErrors) {
+                scrollToFirstError(form)
+                return
+            }
+
+            // ========== Save to Supabase ==========
+            const { error } = await supabase
+                .from('chips')
+                .update(updateData)
+                .eq('id', selectedChip.id)
+
+            if (error) {
+                showToast('Errore durante il salvataggio. Riprova.', 'error')
+                console.error('Save error:', error)
+                return
+            }
+
+            showToast('Modifiche salvate con successo!', 'success')
+
+            // Reload the chip data to reflect saved state
+            await loadChipDetail(selectedChip.id)
+        })
+    </script>
 </body>
 </html>
