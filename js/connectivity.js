@@ -26,7 +26,7 @@ async function checkConnectivity() {
             headers: { 'apikey': SUPABASE_ANON_KEY },
             signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS)
         })
-        return resp.ok
+        return true  // qualsiasi risposta HTTP = rete raggiungibile
     } catch {
         return false
     }
