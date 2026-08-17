@@ -1,5 +1,6 @@
 // app.js — Entry point dell'applicazione Gestione Microchip
 // Registrazione Service Worker e gestione auto-update
+import { initRouter } from './router.js'
 
 /**
  * Registra il Service Worker e gestisce l'auto-reload
@@ -41,6 +42,12 @@ async function initServiceWorker() {
  */
 async function init() {
     await initServiceWorker()
+
+    // Se siamo sulla home page, inizializza il router (auth check + visibilità card per ruolo)
+    const path = window.location.pathname
+    if (path === '/' || path === '/index.html' || path.endsWith('/index.html')) {
+        await initRouter()
+    }
 }
 
 // Avvia l'app quando il DOM è pronto
