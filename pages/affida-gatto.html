@@ -15,89 +15,688 @@
 
     <main class="main-content">
         <section class="form-container">
-            <!-- Selezione gatto -->
+            <!-- Selezione gatto impiantato -->
+            <h2 class="form-title">Seleziona gatto impiantato</h2>
+
             <div class="form-group">
-                <label for="gatto-select">Seleziona gatto impiantato</label>
-                <select id="gatto-select" name="gatto_select">
-                    <option value="">— Seleziona —</option>
-                </select>
-                <button type="button" id="btn-scan" class="btn btn-secondary">Scansiona barcode</button>
-                <div id="scanner-container" class="scanner-area" hidden></div>
-                <span class="error-msg" id="gatto-select-error"></span>
+                <label for="gatto-search">Cerca per numero chip</label>
+                <input type="text" id="gatto-search" placeholder="Digita almeno 3 cifre..."
+                       inputmode="numeric" autocomplete="off">
             </div>
 
-            <!-- Form dati adottante -->
-            <form id="affida-gatto-form" novalidate>
+            <button type="button" id="btn-scan" class="btn btn-secondary btn-full">
+                📷 Scansiona barcode
+            </button>
+            <div id="scanner-container" class="scanner-area" hidden></div>
+
+            <div id="gatto-list-container">
+                <div class="search-results" id="gatto-list" role="listbox" aria-label="Lista gatti impiantati">
+                    <!-- Populated dynamically -->
+                </div>
+                <p class="info-message" id="gatto-list-empty" hidden>Nessun gatto disponibile per l'adozione</p>
+                <p class="info-message" id="gatto-list-loading">Caricamento gatti...</p>
+            </div>
+
+            <span class="error-msg" id="gatto-select-error"></span>
+
+            <!-- Form adozione (hidden until a cat is selected) -->
+            <form id="affida-gatto-form" novalidate hidden>
+                <h2 class="form-section-title">Gatto selezionato</h2>
+                <div class="form-group">
+                    <label for="chip-selezionato">Numero chip</label>
+                    <input type="text" id="chip-selezionato" readonly>
+                </div>
+
+                <!-- Sezione dati gatto -->
+                <h2 class="form-section-title">Dati gatto</h2>
+
                 <div class="form-group">
                     <label for="nome-gatto-adozione">Nome gatto (post-adozione)</label>
-                    <input type="text" id="nome-gatto-adozione" name="nome_gatto_adozione" maxlength="50">
-                    <span class="error-msg" id="nome-gatto-adozione-error"></span>
+                    <input type="text" id="nome-gatto-adozione" name="nome_gatto_adozione" maxlength="50"
+                           placeholder="Se diverso dal nome attuale">
+                    <span class="error-msg"></span>
                 </div>
 
-                <h3 class="form-section-title">Dati adottante</h3>
-
-                <button type="button" id="btn-leggi-cie" class="btn btn-secondary btn-full">Leggi carta d'identità (CIE)</button>
-
-                <div class="form-group">
-                    <label for="adottante-nome">Nome</label>
-                    <input type="text" id="adottante-nome" name="adottante_nome" maxlength="50" required>
-                    <span class="error-msg" id="adottante-nome-error"></span>
-                </div>
-                <div class="form-group">
-                    <label for="adottante-cognome">Cognome</label>
-                    <input type="text" id="adottante-cognome" name="adottante_cognome" maxlength="50" required>
-                    <span class="error-msg" id="adottante-cognome-error"></span>
-                </div>
-                <div class="form-group">
-                    <label for="adottante-cf">Codice fiscale</label>
-                    <input type="text" id="adottante-cf" name="adottante_cf" maxlength="16" required placeholder="RSSMRA80A01H501U">
-                    <span class="error-msg" id="adottante-cf-error"></span>
-                </div>
-                <div class="form-group">
-                    <label for="adottante-data-nascita">Data di nascita</label>
-                    <input type="date" id="adottante-data-nascita" name="adottante_data_nascita" required>
-                    <span class="error-msg" id="adottante-data-nascita-error"></span>
-                </div>
-                <div class="form-group">
-                    <label for="adottante-residenza">Residenza</label>
-                    <input type="text" id="adottante-residenza" name="adottante_residenza" maxlength="200" required>
-                    <span class="error-msg" id="adottante-residenza-error"></span>
-                </div>
-                <div class="form-group">
-                    <label for="adottante-telefono">Telefono</label>
-                    <input type="tel" id="adottante-telefono" name="adottante_telefono" maxlength="20" required>
-                    <span class="error-msg" id="adottante-telefono-error"></span>
-                </div>
-                <div class="form-group">
-                    <label for="adottante-documento">Numero documento</label>
-                    <input type="text" id="adottante-documento" name="adottante_numero_documento" required>
-                    <span class="error-msg" id="adottante-documento-error"></span>
-                </div>
-                <div class="form-group">
-                    <label for="adottante-scadenza-doc">Scadenza documento</label>
-                    <input type="date" id="adottante-scadenza-doc" name="adottante_scadenza_documento">
-                    <span class="error-msg" id="adottante-scadenza-doc-error"></span>
-                </div>
-                <div class="form-group">
-                    <label for="numero-scheda">Numero scheda</label>
-                    <input type="text" id="numero-scheda" name="numero_scheda" required>
-                    <span class="error-msg" id="numero-scheda-error"></span>
-                </div>
                 <div class="form-group">
                     <label for="data-adozione">Data di adozione</label>
                     <input type="date" id="data-adozione" name="data_adozione" required>
-                    <span class="error-msg" id="data-adozione-error"></span>
+                    <span class="error-msg"></span>
                 </div>
+
+                <!-- Sezione dati adottante -->
+                <h2 class="form-section-title">Dati adottante</h2>
+
+                <button type="button" id="btn-leggi-cie" class="btn btn-secondary btn-full">
+                    📄 Leggi carta d'identità (CIE)
+                </button>
+
+                <!-- CIE file inputs (hidden until user taps "Leggi CIE") -->
+                <div id="cie-inputs" hidden>
+                    <div class="form-group">
+                        <label for="cie-retro">Foto retro (MRZ)</label>
+                        <input type="file" id="cie-retro" accept="image/*" capture="environment">
+                    </div>
+                    <div class="form-group">
+                        <label for="cie-fronte">Foto fronte (indirizzo)</label>
+                        <input type="file" id="cie-fronte" accept="image/*" capture="environment">
+                    </div>
+                    <p class="info-message" id="cie-status" hidden></p>
+                </div>
+
+                <div class="form-group">
+                    <label for="adottante-nome">Nome</label>
+                    <input type="text" id="adottante-nome" name="adottante_nome" maxlength="50"
+                           required placeholder="Nome dell'adottante">
+                    <span class="error-msg"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="adottante-cognome">Cognome</label>
+                    <input type="text" id="adottante-cognome" name="adottante_cognome" maxlength="50"
+                           required placeholder="Cognome dell'adottante">
+                    <span class="error-msg"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="adottante-cf">Codice fiscale</label>
+                    <input type="text" id="adottante-cf" name="adottante_cf" maxlength="16"
+                           required placeholder="RSSMRA80A01H501U" autocapitalize="characters">
+                    <span class="error-msg"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="adottante-data-nascita">Data di nascita</label>
+                    <input type="date" id="adottante-data-nascita" name="adottante_data_nascita" required>
+                    <span class="error-msg"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="adottante-residenza">Residenza</label>
+                    <input type="text" id="adottante-residenza" name="adottante_residenza" maxlength="200"
+                           required placeholder="Via/Piazza, CAP Città (Prov)">
+                    <span class="error-msg"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="adottante-telefono">Telefono</label>
+                    <input type="tel" id="adottante-telefono" name="adottante_telefono" maxlength="20"
+                           required placeholder="+39 333 1234567">
+                    <span class="error-msg"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="adottante-documento">Numero documento</label>
+                    <input type="text" id="adottante-documento" name="adottante_numero_documento">
+                    <span class="error-msg"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="adottante-scadenza-doc">Scadenza documento</label>
+                    <input type="date" id="adottante-scadenza-doc" name="adottante_scadenza_documento">
+                    <span class="error-msg"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="numero-scheda">Numero scheda</label>
+                    <input type="text" id="numero-scheda" name="numero_scheda" required
+                           placeholder="Numero scheda adozione">
+                    <span class="error-msg"></span>
+                </div>
+
                 <div class="form-group form-group-checkbox">
                     <input type="checkbox" id="privacy" name="privacy_autorizzata" required>
                     <label for="privacy">L'adottante ha autorizzato all'utilizzo dei dati personali</label>
-                    <span class="error-msg" id="privacy-error"></span>
+                    <span class="error-msg"></span>
                 </div>
+
                 <button type="submit" class="btn btn-primary btn-full">Conferma adozione</button>
             </form>
         </section>
     </main>
 
-    <script type="module" src="../js/app.js"></script>
+    <script type="module">
+        import { protectPage } from '../js/router.js'
+        import { initDarkMode, showToast, showFieldError, clearAllErrors, scrollToFirstError } from '../js/ui-utils.js'
+        import { validateCodiceFiscale } from '../js/validation.js'
+        import { supabase } from '../js/supabase-client.js'
+        import { startScan, stopScan } from '../js/scanner.js'
+        import { extractMRZFromImage, extractAddressFromImage } from '../js/ocr.js'
+        import { parseMRZ } from '../js/mrz-parser.js'
+
+        // Inizializza dark mode
+        initDarkMode()
+
+        // Guard: admin e guest possono accedere
+        const ctx = await protectPage(['admin', 'guest'])
+        if (!ctx) throw new Error('Accesso negato')
+
+        const { role, associazione: userAssociazioneId } = ctx
+
+        // =====================================================================
+        // DOM References
+        // =====================================================================
+        const gattoSearch = document.getElementById('gatto-search')
+        const gattoList = document.getElementById('gatto-list')
+        const gattoListEmpty = document.getElementById('gatto-list-empty')
+        const gattoListLoading = document.getElementById('gatto-list-loading')
+        const gattoSelectError = document.getElementById('gatto-select-error')
+        const btnScan = document.getElementById('btn-scan')
+        const scannerContainer = document.getElementById('scanner-container')
+        const form = document.getElementById('affida-gatto-form')
+        const chipSelezionato = document.getElementById('chip-selezionato')
+        const btnLeggiCie = document.getElementById('btn-leggi-cie')
+        const cieInputs = document.getElementById('cie-inputs')
+        const cieRetroInput = document.getElementById('cie-retro')
+        const cieFronteInput = document.getElementById('cie-fronte')
+        const cieStatus = document.getElementById('cie-status')
+
+        // =====================================================================
+        // State
+        // =====================================================================
+        let allCats = []           // All implanted cats from DB
+        let selectedCat = null     // Currently selected cat object
+
+        // =====================================================================
+        // Init: load implanted cats
+        // =====================================================================
+
+        // Set today's date as default and max for data-adozione
+        const today = new Date().toISOString().split('T')[0]
+        const dataAdozioneInput = document.getElementById('data-adozione')
+        dataAdozioneInput.value = today
+        dataAdozioneInput.max = today
+
+        async function loadCats() {
+            gattoListLoading.hidden = false
+            gattoListEmpty.hidden = true
+            gattoList.innerHTML = ''
+
+            let query = supabase
+                .from('chips')
+                .select('id, numero_chip, nome_gatto, associazione_id, data_impianto')
+                .eq('stato', 'impiantato')
+                .order('nome_gatto', { ascending: true })
+
+            // Guest: filter by own association
+            if (role === 'guest' && userAssociazioneId) {
+                query = query.eq('associazione_id', userAssociazioneId)
+            }
+
+            const { data, error } = await query
+
+            gattoListLoading.hidden = true
+
+            if (error) {
+                showToast('Errore nel caricamento dei gatti', 'error')
+                gattoListEmpty.textContent = 'Errore nel caricamento'
+                gattoListEmpty.hidden = false
+                return
+            }
+
+            allCats = data || []
+
+            if (allCats.length === 0) {
+                gattoListEmpty.hidden = false
+            } else {
+                renderCatList(allCats)
+            }
+        }
+
+        await loadCats()
+
+        // =====================================================================
+        // Render cat list
+        // =====================================================================
+        function renderCatList(cats) {
+            gattoList.innerHTML = ''
+            gattoListEmpty.hidden = true
+
+            if (cats.length === 0) {
+                gattoListEmpty.textContent = 'Nessun gatto corrisponde alla ricerca'
+                gattoListEmpty.hidden = false
+                return
+            }
+
+            cats.forEach(cat => {
+                const item = document.createElement('div')
+                item.className = 'result-item'
+                item.role = 'option'
+                item.tabIndex = 0
+                item.dataset.catId = cat.id
+                item.innerHTML = `
+                    <span>${escapeHtml(cat.nome_gatto || 'Senza nome')}</span>
+                    <span style="font-size:0.75rem;color:#666">${escapeHtml(cat.numero_chip)}</span>
+                `
+                item.addEventListener('click', () => selectCat(cat))
+                item.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        selectCat(cat)
+                    }
+                })
+                gattoList.appendChild(item)
+            })
+        }
+
+        /** Escape HTML to prevent XSS */
+        function escapeHtml(str) {
+            if (!str) return ''
+            const div = document.createElement('div')
+            div.textContent = str
+            return div.innerHTML
+        }
+
+        // =====================================================================
+        // Search/filter cats (client-side)
+        // =====================================================================
+        gattoSearch.addEventListener('input', () => {
+            const query = gattoSearch.value.trim()
+            if (query.length === 0) {
+                renderCatList(allCats)
+                return
+            }
+            const filtered = allCats.filter(c =>
+                c.numero_chip.includes(query) ||
+                (c.nome_gatto && c.nome_gatto.toLowerCase().includes(query.toLowerCase()))
+            )
+            renderCatList(filtered)
+        })
+
+        // =====================================================================
+        // Select a cat → show adoption form
+        // =====================================================================
+        function selectCat(cat) {
+            selectedCat = cat
+            chipSelezionato.value = cat.numero_chip
+            gattoSelectError.textContent = ''
+
+            // Pre-fill cat name for adoption (editable)
+            const nomeGattoInput = document.getElementById('nome-gatto-adozione')
+            nomeGattoInput.value = cat.nome_gatto || ''
+
+            // Show the form
+            form.hidden = false
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+
+        // =====================================================================
+        // Scanner
+        // =====================================================================
+        let scanning = false
+
+        btnScan.addEventListener('click', async () => {
+            if (scanning) {
+                await stopScan()
+                scannerContainer.hidden = true
+                btnScan.textContent = '📷 Scansiona barcode'
+                scanning = false
+                return
+            }
+
+            scanning = true
+            scannerContainer.hidden = false
+            btnScan.textContent = '✕ Chiudi scanner'
+
+            await startScan(
+                'scanner-container',
+                // onSuccess
+                (decodedText) => {
+                    scanning = false
+                    scannerContainer.hidden = true
+                    btnScan.textContent = '📷 Scansiona barcode'
+
+                    // Find the cat among implanted ones
+                    const found = allCats.find(c => c.numero_chip === decodedText)
+                    if (found) {
+                        selectCat(found)
+                        showToast(`Gatto "${found.nome_gatto || decodedText}" selezionato`, 'success')
+                    } else {
+                        showToast('Microchip non associato a nessun gatto disponibile per l\'adozione', 'error')
+                    }
+                },
+                // onError
+                (errorType) => {
+                    scanning = false
+                    scannerContainer.hidden = true
+                    btnScan.textContent = '📷 Scansiona barcode'
+
+                    if (errorType === 'TIMEOUT') {
+                        showToast('Scansione non riuscita entro il tempo limite. Riprova o procedi manualmente.', 'error')
+                    } else {
+                        showToast('Impossibile accedere alla fotocamera. Verifica i permessi.', 'error')
+                    }
+                }
+            )
+        })
+
+        // =====================================================================
+        // CIE Reading Pipeline (MRZ + OCR)
+        // =====================================================================
+        btnLeggiCie.addEventListener('click', () => {
+            cieInputs.hidden = !cieInputs.hidden
+            if (!cieInputs.hidden) {
+                btnLeggiCie.textContent = '✕ Chiudi lettura CIE'
+            } else {
+                btnLeggiCie.textContent = '📄 Leggi carta d\'identità (CIE)'
+            }
+        })
+
+        // Retro photo: MRZ extraction
+        cieRetroInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0]
+            if (!file) return
+
+            cieStatus.textContent = 'Elaborazione MRZ in corso...'
+            cieStatus.hidden = false
+
+            try {
+                const { mrzText, error: mrzError } = await extractMRZFromImage(file)
+
+                if (mrzError || !mrzText) {
+                    cieStatus.textContent = ''
+                    cieStatus.hidden = true
+                    showToast('Impossibile leggere la banda MRZ. Riprova con una foto più nitida.', 'error')
+                    return
+                }
+
+                // Parse MRZ
+                const { fields, errors: parseErrors } = parseMRZ(mrzText)
+
+                if (!fields || (parseErrors && parseErrors.length > 0)) {
+                    cieStatus.textContent = ''
+                    cieStatus.hidden = true
+                    showToast('MRZ non valida: ' + (parseErrors ? parseErrors[0] : 'formato non riconosciuto'), 'error')
+                    return
+                }
+
+                // Pre-fill fields from MRZ data
+                fillFieldsFromMRZ(fields)
+
+                cieStatus.textContent = 'Dati MRZ estratti con successo'
+                cieStatus.hidden = false
+                setTimeout(() => { cieStatus.hidden = true }, 3000)
+
+            } catch (err) {
+                cieStatus.textContent = ''
+                cieStatus.hidden = true
+                showToast('Errore durante la lettura della carta. Inserisci i dati manualmente.', 'error')
+            }
+        })
+
+        // Fronte photo: address extraction
+        cieFronteInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0]
+            if (!file) return
+
+            cieStatus.textContent = 'Estrazione indirizzo in corso...'
+            cieStatus.hidden = false
+
+            try {
+                const { address, error: addrError } = await extractAddressFromImage(file)
+
+                if (address) {
+                    document.getElementById('adottante-residenza').value = address
+                    cieStatus.textContent = 'Indirizzo estratto con successo'
+                    cieStatus.hidden = false
+                    setTimeout(() => { cieStatus.hidden = true }, 3000)
+                } else {
+                    // No error toast for address failure — field just stays empty for manual entry
+                    cieStatus.textContent = ''
+                    cieStatus.hidden = true
+                }
+            } catch (err) {
+                // Silent failure for address — user can enter manually
+                cieStatus.textContent = ''
+                cieStatus.hidden = true
+            }
+        })
+
+        /**
+         * Fill adoption form fields from parsed MRZ data.
+         * Handles partial data: fills only what was successfully extracted.
+         */
+        function fillFieldsFromMRZ(fields) {
+            // Nome (givenNames)
+            if (fields.givenNames) {
+                document.getElementById('adottante-nome').value = capitalizeWords(fields.givenNames)
+            }
+
+            // Cognome (surname)
+            if (fields.surname) {
+                document.getElementById('adottante-cognome').value = capitalizeWords(fields.surname)
+            }
+
+            // Data di nascita (dateOfBirth: YYMMDD → date input YYYY-MM-DD)
+            if (fields.dateOfBirth && fields.dateOfBirth.length === 6) {
+                const dobDate = mrzDateToISO(fields.dateOfBirth)
+                if (dobDate) {
+                    document.getElementById('adottante-data-nascita').value = dobDate
+                }
+            }
+
+            // Codice fiscale: from optionalData1 field (Italian CIE stores CF there)
+            if (fields.optionalData1 && fields.optionalData1.trim().length === 16) {
+                document.getElementById('adottante-cf').value = fields.optionalData1.trim().toUpperCase()
+            }
+
+            // Numero documento (documentNumber)
+            if (fields.documentNumber) {
+                document.getElementById('adottante-documento').value = fields.documentNumber.trim()
+            }
+
+            // Scadenza documento (expiryDate: YYMMDD → YYYY-MM-DD)
+            if (fields.expiryDate && fields.expiryDate.length === 6) {
+                const expDate = mrzDateToISO(fields.expiryDate, true)
+                if (expDate) {
+                    document.getElementById('adottante-scadenza-doc').value = expDate
+                }
+            }
+        }
+
+        /**
+         * Convert MRZ date (YYMMDD) to ISO format (YYYY-MM-DD).
+         * For birth dates: 00-99 → 1920-2020 (assume past)
+         * For expiry dates: 00-99 → 2000-2099 (assume future)
+         */
+        function mrzDateToISO(mrzDate, isFutureDate = false) {
+            if (!mrzDate || mrzDate.length !== 6) return null
+
+            const yy = parseInt(mrzDate.substring(0, 2), 10)
+            const mm = mrzDate.substring(2, 4)
+            const dd = mrzDate.substring(4, 6)
+
+            let year
+            if (isFutureDate) {
+                year = 2000 + yy
+            } else {
+                // Birth date: if yy > current year's last 2 digits, it's 1900s
+                const currentYY = new Date().getFullYear() % 100
+                year = yy > currentYY ? 1900 + yy : 2000 + yy
+            }
+
+            // Validate the resulting date
+            const dateStr = `${year}-${mm}-${dd}`
+            const date = new Date(dateStr)
+            if (isNaN(date.getTime())) return null
+
+            return dateStr
+        }
+
+        /**
+         * Capitalize first letter of each word.
+         */
+        function capitalizeWords(str) {
+            if (!str) return ''
+            return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+        }
+
+        // =====================================================================
+        // Form submission
+        // =====================================================================
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault()
+            clearAllErrors(form)
+
+            if (!selectedCat) {
+                gattoSelectError.textContent = 'Seleziona un gatto prima di procedere'
+                return
+            }
+
+            // Read form values
+            const nomeGattoAdozione = document.getElementById('nome-gatto-adozione').value.trim()
+            const dataAdozione = document.getElementById('data-adozione').value
+            const adottanteNome = document.getElementById('adottante-nome').value.trim()
+            const adottanteCognome = document.getElementById('adottante-cognome').value.trim()
+            const adottanteCf = document.getElementById('adottante-cf').value.trim().toUpperCase()
+            const adottanteDataNascita = document.getElementById('adottante-data-nascita').value
+            const adottanteResidenza = document.getElementById('adottante-residenza').value.trim()
+            const adottanteTelefono = document.getElementById('adottante-telefono').value.trim()
+            const adottanteDocumento = document.getElementById('adottante-documento').value.trim()
+            const adottanteScadenzaDoc = document.getElementById('adottante-scadenza-doc').value
+            const numeroScheda = document.getElementById('numero-scheda').value.trim()
+            const privacyCheckbox = document.getElementById('privacy')
+            const privacyChecked = privacyCheckbox.checked
+
+            // ========== Validation ==========
+            let hasErrors = false
+
+            // Data adozione: required, not future
+            const dataAdozioneEl = document.getElementById('data-adozione')
+            if (!dataAdozione) {
+                showFieldError(dataAdozioneEl, 'La data di adozione è obbligatoria')
+                hasErrors = true
+            } else {
+                const adozioneDate = new Date(dataAdozione)
+                const todayDate = new Date()
+                todayDate.setHours(0, 0, 0, 0)
+                if (adozioneDate > todayDate) {
+                    showFieldError(dataAdozioneEl, 'La data non può essere nel futuro')
+                    hasErrors = true
+                }
+            }
+
+            // Adottante nome: required, max 50
+            const nomeEl = document.getElementById('adottante-nome')
+            if (!adottanteNome) {
+                showFieldError(nomeEl, 'Il nome dell\'adottante è obbligatorio')
+                hasErrors = true
+            } else if (adottanteNome.length > 50) {
+                showFieldError(nomeEl, 'Massimo 50 caratteri')
+                hasErrors = true
+            }
+
+            // Adottante cognome: required, max 50
+            const cognomeEl = document.getElementById('adottante-cognome')
+            if (!adottanteCognome) {
+                showFieldError(cognomeEl, 'Il cognome dell\'adottante è obbligatorio')
+                hasErrors = true
+            } else if (adottanteCognome.length > 50) {
+                showFieldError(cognomeEl, 'Massimo 50 caratteri')
+                hasErrors = true
+            }
+
+            // Codice fiscale: required, validate with full algorithm
+            const cfEl = document.getElementById('adottante-cf')
+            if (!adottanteCf) {
+                showFieldError(cfEl, 'Il codice fiscale è obbligatorio')
+                hasErrors = true
+            } else {
+                const cfResult = validateCodiceFiscale(adottanteCf)
+                if (!cfResult.valid) {
+                    showFieldError(cfEl, cfResult.error)
+                    hasErrors = true
+                }
+            }
+
+            // Data nascita adottante: required
+            const dataNascitaEl = document.getElementById('adottante-data-nascita')
+            if (!adottanteDataNascita) {
+                showFieldError(dataNascitaEl, 'La data di nascita è obbligatoria')
+                hasErrors = true
+            }
+
+            // Residenza: required, max 200
+            const residenzaEl = document.getElementById('adottante-residenza')
+            if (!adottanteResidenza) {
+                showFieldError(residenzaEl, 'La residenza è obbligatoria')
+                hasErrors = true
+            } else if (adottanteResidenza.length > 200) {
+                showFieldError(residenzaEl, 'Massimo 200 caratteri')
+                hasErrors = true
+            }
+
+            // Telefono: required, max 20
+            const telefonoEl = document.getElementById('adottante-telefono')
+            if (!adottanteTelefono) {
+                showFieldError(telefonoEl, 'Il numero di telefono è obbligatorio')
+                hasErrors = true
+            } else if (adottanteTelefono.length > 20) {
+                showFieldError(telefonoEl, 'Massimo 20 caratteri')
+                hasErrors = true
+            }
+
+            // Numero scheda: required
+            const schedaEl = document.getElementById('numero-scheda')
+            if (!numeroScheda) {
+                showFieldError(schedaEl, 'Il numero scheda è obbligatorio')
+                hasErrors = true
+            }
+
+            // Privacy checkbox: must be checked
+            if (!privacyChecked) {
+                showFieldError(privacyCheckbox, 'È necessario autorizzare l\'utilizzo dei dati personali')
+                hasErrors = true
+            }
+
+            if (hasErrors) {
+                scrollToFirstError(form)
+                return
+            }
+
+            // ========== Submit to Supabase ==========
+            const updateData = {
+                stato: 'adottato',
+                nome_gatto_adozione: nomeGattoAdozione || null,
+                adottante_nome: adottanteNome,
+                adottante_cognome: adottanteCognome,
+                adottante_cf: adottanteCf,
+                adottante_data_nascita: adottanteDataNascita,
+                adottante_residenza: adottanteResidenza,
+                adottante_telefono: adottanteTelefono,
+                adottante_numero_documento: adottanteDocumento || null,
+                adottante_scadenza_documento: adottanteScadenzaDoc || null,
+                numero_scheda: numeroScheda,
+                privacy_autorizzata: true,
+                data_adozione: dataAdozione
+            }
+
+            const { error } = await supabase
+                .from('chips')
+                .update(updateData)
+                .eq('id', selectedCat.id)
+                .eq('stato', 'impiantato')  // safety: only update if still impiantato
+
+            if (error) {
+                showToast('Errore durante il salvataggio. Riprova.', 'error')
+                return
+            }
+
+            // Success
+            showToast('Adozione registrata con successo!', 'success')
+
+            // Reset state and reload cats
+            selectedCat = null
+            form.reset()
+            form.hidden = true
+            dataAdozioneInput.value = today
+            dataAdozioneInput.max = today
+            gattoSearch.value = ''
+            cieInputs.hidden = true
+            btnLeggiCie.textContent = '📄 Leggi carta d\'identità (CIE)'
+            cieStatus.hidden = true
+
+            await loadCats()
+        })
+    </script>
 </body>
 </html>
