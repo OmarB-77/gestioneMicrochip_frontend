@@ -70,6 +70,22 @@ export async function getAssociazione() {
 }
 
 /**
+ * Recupera il display_name dell'utente corrente dalla tabella profiles.
+ * @returns {Promise<string|null>}
+ */
+export async function getDisplayName() {
+    const user = await getCurrentUser()
+    if (!user) return null
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .single()
+    if (error || !data) return null
+    return data.display_name
+}
+
+/**
  * Guard di autenticazione. Verifica che l'utente sia autenticato e abbia
  * uno dei ruoli consentiti. Se non autenticato, reindirizza al login.
  *

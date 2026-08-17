@@ -33,13 +33,29 @@ function initDarkModeToggle() {
     if (btn) btn.addEventListener("click", toggleDarkMode)
 }
 
+function setupUserHeader(displayName) {
+    const nameEl = document.getElementById("user-display-name")
+    const logoutBtn = document.getElementById("btn-logout")
+    if (nameEl && displayName) nameEl.textContent = displayName
+    if (logoutBtn) {
+        logoutBtn.hidden = false
+        logoutBtn.addEventListener("click", async () => {
+            const { logout } = await import("./auth.js")
+            await logout()
+        })
+    }
+}
+
 async function init() {
     displayVersion()
     initDarkModeToggle()
     await initServiceWorker()
     const path = window.location.pathname
     if (path.endsWith('/') || path.endsWith('/index.html')) {
-        await initRouter()
+        const ctx = await initRouter()
+        if (ctx) {
+            setupUserHeader(ctx.displayName)
+        }
     }
 }
 

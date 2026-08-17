@@ -1,5 +1,5 @@
 // router.js — Navigazione tra pagine e protezione rotte per ruolo
-import { getCurrentUser, getUserRole, getAssociazione } from './auth.js'
+import { getCurrentUser, getUserRole, getAssociazione, getDisplayName } from './auth.js'
 import { LOGIN_PAGE, HOME_PAGE } from './config.js'
 
 /**
@@ -41,6 +41,7 @@ export async function initRouter() {
     }
 
     const associazione = await getAssociazione()
+    const displayName = await getDisplayName()
 
     // Nascondi le card riservate all'admin se l'utente è guest
     if (role === 'guest') {
@@ -50,7 +51,7 @@ export async function initRouter() {
         })
     }
 
-    return { user, role, associazione }
+    return { user, role, associazione, displayName }
 }
 
 /**
@@ -78,8 +79,9 @@ export async function protectPage(allowedRoles = ['admin', 'guest']) {
     }
 
     const associazione = await getAssociazione()
+    const displayName = await getDisplayName()
 
-    return { user, role, associazione }
+    return { user, role, associazione, displayName }
 }
 
 export { ROUTE_ROLES }

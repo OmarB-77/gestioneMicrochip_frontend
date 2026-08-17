@@ -13,10 +13,14 @@
 <body>
     <header class="app-header">
         <h1 class="app-title">Gestione Microchip</h1>
-        <button id="dark-mode-toggle" class="btn-icon" aria-label="Attiva/disattiva tema scuro">
-            <span class="icon-sun">☀️</span>
-            <span class="icon-moon">🌙</span>
-        </button>
+        <div class="header-actions">
+            <span id="user-display-name" class="user-name"></span>
+            <button id="btn-logout" class="btn-icon" aria-label="Logout" title="Esci" hidden>🚪</button>
+            <button id="dark-mode-toggle" class="btn-icon" aria-label="Attiva/disattiva tema scuro">
+                <span class="icon-sun">☀️</span>
+                <span class="icon-moon">🌙</span>
+            </button>
+        </div>
     </header>
 
     <main class="main-content">
