@@ -241,8 +241,8 @@
                 item.dataset.chipId = chip.id
                 item.dataset.chipNumero = chip.numero_chip
                 item.innerHTML = `
-                    <span>${chip.numero_chip}</span>
-                    <span style="font-size:0.75rem;color:#666">${formatDateDisplay(chip.data_carico)}</span>
+                    <span>${escapeHtml(chip.numero_chip)}</span>
+                    <span style="font-size:0.75rem;color:#666">${escapeHtml(formatDateDisplay(chip.data_carico))}</span>
                 `
                 item.addEventListener('click', () => selectChip(chip))
                 item.addEventListener('keydown', (e) => {
@@ -253,6 +253,14 @@
                 })
                 chipList.appendChild(item)
             })
+        }
+
+        /** Escape HTML to prevent XSS */
+        function escapeHtml(str) {
+            if (!str) return ''
+            const div = document.createElement('div')
+            div.textContent = str
+            return div.innerHTML
         }
 
         function formatDateDisplay(dateStr) {

@@ -2,6 +2,7 @@ import { VERSION } from "./version.js"
 import { initDarkMode, toggleDarkMode } from "./ui-utils.js"
 import { initRouter } from "./router.js"
 import { SW_PATH } from "./config.js"
+import { initConnectivity } from "./connectivity.js"
 
 async function initServiceWorker() {
     if (!("serviceWorker" in navigator)) return
@@ -49,6 +50,7 @@ function setupUserHeader(displayName) {
 async function init() {
     displayVersion()
     initDarkModeToggle()
+    initConnectivity()
     await initServiceWorker()
     const path = window.location.pathname
     if (path.endsWith('/') || path.endsWith('/index.html')) {
