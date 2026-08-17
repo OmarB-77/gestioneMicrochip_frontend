@@ -24,6 +24,10 @@
                            autocomplete="off">
                     <span class="error-msg" id="numero-chip-error"></span>
                 </div>
+                <button type="button" id="btn-scan" class="btn btn-secondary btn-full">
+                    📷 Scansiona barcode
+                </button>
+                <div id="scanner-container" class="scanner-area" hidden></div>
                 <div class="form-group">
                     <label for="data-carico">Data di carico</label>
                     <input type="date" id="data-carico" name="data_carico" required>
@@ -39,6 +43,7 @@
         import { initDarkMode, showToast, showFieldError, clearAllErrors, scrollToFirstError } from '../js/ui-utils.js'
         import { validateChipNumber } from '../js/validation.js'
         import { supabase } from '../js/supabase-client.js'
+        import { startScan, stopScan } from '../js/scanner.js'
 
         // Inizializza dark mode
         initDarkMode()
@@ -56,6 +61,51 @@
         dataCaricoInput.value = today
         dataCaricoInput.max = today
 
+        // Riferimenti elementi scanner
+        const btnScan = document.getElementById('btn-scan')
+        const scannerContainer = document.getElementById('scanner-container')
+        const numeroChipInput = document.getElementById('numero-chip')
+        let scannerActive = false
+
+        // Gestione scanner barcode
+        btnScan.addEventListener('click', async () => {
+            if (scannerActive) {
+                // Chiudi scanner
+                await stopScan()
+                scannerContainer.hidden = true
+                btnScan.textContent = '📷 Scansiona barcode'
+                scannerActive = false
+            } else {
+                // Apri scanner
+                scannerContainer.hidden = false
+                btnScan.textContent = '✕ Chiudi scanner'
+                scannerActive = true
+
+                await startScan(
+                    'scanner-container',
+                    (decodedText) => {
+                        // Successo: inserisci il codice nel campo
+                        numeroChipInput.value = decodedText
+                        scannerContainer.hidden = true
+                        btnScan.textContent = '📷 Scansiona barcode'
+                        scannerActive = false
+                        showToast('Codice scansionato con successo', 'success')
+                    },
+                    (errorType) => {
+                        // Errore: timeout o problema fotocamera
+                        scannerContainer.hidden = true
+                        btnScan.textContent = '📷 Scansiona barcode'
+                        scannerActive = false
+                        if (errorType === 'TIMEOUT') {
+                            showToast('Scansione non riuscita entro il tempo limite. Riprova o procedi manualmente.', 'error')
+                        } else {
+                            showToast('Impossibile accedere alla fotocamera. Verifica i permessi.', 'error')
+                        }
+                    }
+                )
+            }
+        })
+
         // Gestione submit form
         const form = document.getElementById('carica-chip-form')
 
@@ -66,7 +116,6 @@
             clearAllErrors(form)
 
             // 2. Leggi valori
-            const numeroChipInput = document.getElementById('numero-chip')
             const numeroChip = numeroChipInput.value.trim()
             const dataCarico = dataCaricoInput.value
 
