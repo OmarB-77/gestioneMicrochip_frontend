@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affida Gatto — Gestione Microchip</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dark.css" id="dark-theme-link" disabled>
+</head>
+<body>
+    <header class="app-header">
+        <a href="../index.html" class="btn-back" aria-label="Torna alla home">← Home</a>
+        <h1 class="app-title">Affida Gatto</h1>
+    </header>
+
+    <main class="main-content">
+        <section class="form-container">
+            <!-- Selezione gatto -->
+            <div class="form-group">
+                <label for="gatto-select">Seleziona gatto impiantato</label>
+                <select id="gatto-select" name="gatto_select">
+                    <option value="">— Seleziona —</option>
+                </select>
+                <button type="button" id="btn-scan" class="btn btn-secondary">Scansiona barcode</button>
+                <div id="scanner-container" class="scanner-area" hidden></div>
+                <span class="error-msg" id="gatto-select-error"></span>
+            </div>
+
+            <!-- Form dati adottante -->
+            <form id="affida-gatto-form" novalidate>
+                <div class="form-group">
+                    <label for="nome-gatto-adozione">Nome gatto (post-adozione)</label>
+                    <input type="text" id="nome-gatto-adozione" name="nome_gatto_adozione" maxlength="50">
+                    <span class="error-msg" id="nome-gatto-adozione-error"></span>
+                </div>
+
+                <h3 class="form-section-title">Dati adottante</h3>
+
+                <button type="button" id="btn-leggi-cie" class="btn btn-secondary btn-full">Leggi carta d'identità (CIE)</button>
+
+                <div class="form-group">
+                    <label for="adottante-nome">Nome</label>
+                    <input type="text" id="adottante-nome" name="adottante_nome" maxlength="50" required>
+                    <span class="error-msg" id="adottante-nome-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="adottante-cognome">Cognome</label>
+                    <input type="text" id="adottante-cognome" name="adottante_cognome" maxlength="50" required>
+                    <span class="error-msg" id="adottante-cognome-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="adottante-cf">Codice fiscale</label>
+                    <input type="text" id="adottante-cf" name="adottante_cf" maxlength="16" required placeholder="RSSMRA80A01H501U">
+                    <span class="error-msg" id="adottante-cf-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="adottante-data-nascita">Data di nascita</label>
+                    <input type="date" id="adottante-data-nascita" name="adottante_data_nascita" required>
+                    <span class="error-msg" id="adottante-data-nascita-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="adottante-residenza">Residenza</label>
+                    <input type="text" id="adottante-residenza" name="adottante_residenza" maxlength="200" required>
+                    <span class="error-msg" id="adottante-residenza-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="adottante-telefono">Telefono</label>
+                    <input type="tel" id="adottante-telefono" name="adottante_telefono" maxlength="20" required>
+                    <span class="error-msg" id="adottante-telefono-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="adottante-documento">Numero documento</label>
+                    <input type="text" id="adottante-documento" name="adottante_numero_documento" required>
+                    <span class="error-msg" id="adottante-documento-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="adottante-scadenza-doc">Scadenza documento</label>
+                    <input type="date" id="adottante-scadenza-doc" name="adottante_scadenza_documento">
+                    <span class="error-msg" id="adottante-scadenza-doc-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="numero-scheda">Numero scheda</label>
+                    <input type="text" id="numero-scheda" name="numero_scheda" required>
+                    <span class="error-msg" id="numero-scheda-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="data-adozione">Data di adozione</label>
+                    <input type="date" id="data-adozione" name="data_adozione" required>
+                    <span class="error-msg" id="data-adozione-error"></span>
+                </div>
+                <div class="form-group form-group-checkbox">
+                    <input type="checkbox" id="privacy" name="privacy_autorizzata" required>
+                    <label for="privacy">L'adottante ha autorizzato all'utilizzo dei dati personali</label>
+                    <span class="error-msg" id="privacy-error"></span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Conferma adozione</button>
+            </form>
+        </section>
+    </main>
+
+    <script type="module" src="../js/app.js"></script>
+</body>
+</html>

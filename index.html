@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Microchip</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dark.css" id="dark-theme-link" disabled>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2196F3">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+</head>
+<body>
+    <header class="app-header">
+        <h1 class="app-title">Gestione Microchip</h1>
+        <button id="dark-mode-toggle" class="btn-icon" aria-label="Attiva/disattiva tema scuro">
+            <span class="icon-sun">☀️</span>
+            <span class="icon-moon">🌙</span>
+        </button>
+    </header>
+
+    <main class="main-content">
+        <nav class="nav-grid" aria-label="Funzionalità principali">
+            <a href="pages/carica-chip.html" class="nav-card" data-role="admin">
+                <span class="nav-card-icon">📦</span>
+                <span class="nav-card-label">Carica chip</span>
+            </a>
+            <a href="pages/impianta-chip.html" class="nav-card">
+                <span class="nav-card-icon">💉</span>
+                <span class="nav-card-label">Impianta chip</span>
+            </a>
+            <a href="pages/affida-gatto.html" class="nav-card">
+                <span class="nav-card-icon">🐱</span>
+                <span class="nav-card-label">Affida gatto</span>
+            </a>
+            <a href="pages/registra-bdn.html" class="nav-card" data-role="admin">
+                <span class="nav-card-icon">📋</span>
+                <span class="nav-card-label">Registra in BDN</span>
+            </a>
+            <a href="pages/cerca-chip.html" class="nav-card">
+                <span class="nav-card-icon">🔍</span>
+                <span class="nav-card-label">Cerca chip</span>
+            </a>
+            <a href="pages/riepilogo.html" class="nav-card">
+                <span class="nav-card-icon">📊</span>
+                <span class="nav-card-label">Riepilogo</span>
+            </a>
+        </nav>
+    </main>
+
+    <footer class="app-footer">
+        <p>Versione <span id="version">—</span></p>
+    </footer>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

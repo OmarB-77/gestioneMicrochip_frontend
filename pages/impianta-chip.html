@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impianta Chip — Gestione Microchip</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dark.css" id="dark-theme-link" disabled>
+</head>
+<body>
+    <header class="app-header">
+        <a href="../index.html" class="btn-back" aria-label="Torna alla home">← Home</a>
+        <h1 class="app-title">Impianta Chip</h1>
+    </header>
+
+    <main class="main-content">
+        <section class="form-container">
+            <!-- Selezione chip -->
+            <div class="form-group">
+                <label for="chip-select">Seleziona chip disponibile</label>
+                <select id="chip-select" name="chip_select">
+                    <option value="">— Seleziona —</option>
+                </select>
+                <button type="button" id="btn-scan" class="btn btn-secondary">Scansiona barcode</button>
+                <div id="scanner-container" class="scanner-area" hidden></div>
+                <span class="error-msg" id="chip-select-error"></span>
+            </div>
+
+            <!-- Form dati gatto -->
+            <form id="impianta-chip-form" novalidate>
+                <div class="form-group">
+                    <label for="nome-gatto">Nome gatto (max 50 caratteri)</label>
+                    <input type="text" id="nome-gatto" name="nome_gatto" maxlength="50" required>
+                    <span class="error-msg" id="nome-gatto-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="colore-mantello">Colore mantello (max 50 caratteri)</label>
+                    <input type="text" id="colore-mantello" name="colore_mantello" maxlength="50" required>
+                    <span class="error-msg" id="colore-mantello-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="data-nascita-gatto">Data di nascita</label>
+                    <input type="date" id="data-nascita-gatto" name="data_nascita_gatto" required>
+                    <span class="error-msg" id="data-nascita-gatto-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="genere-gatto">Genere</label>
+                    <select id="genere-gatto" name="genere_gatto" required>
+                        <option value="">— Seleziona —</option>
+                        <option value="maschio">Maschio</option>
+                        <option value="femmina">Femmina</option>
+                    </select>
+                    <span class="error-msg" id="genere-gatto-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="associazione">Associazione</label>
+                    <select id="associazione" name="associazione_id" required>
+                        <option value="">— Seleziona —</option>
+                    </select>
+                    <span class="error-msg" id="associazione-error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="data-impianto">Data di impianto</label>
+                    <input type="date" id="data-impianto" name="data_impianto" required>
+                    <span class="error-msg" id="data-impianto-error"></span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Conferma impianto</button>
+            </form>
+        </section>
+    </main>
+
+    <script type="module" src="../js/app.js"></script>
+</body>
+</html>

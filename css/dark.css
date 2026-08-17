@@ -1,0 +1,169 @@
+/* ==========================================================================
+   Gestione Microchip — Dark Theme Override
+   Attivato via classe body.dark e link stylesheet abilitato
+   ========================================================================== */
+
+body.dark {
+    color: #e0e0e0;
+    background-color: #121212;
+}
+
+/* ---------- Header ---------- */
+body.dark .app-header {
+    background-color: #1565C0;
+}
+
+/* ---------- Cards & Containers ---------- */
+body.dark .nav-card {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark .nav-card:active {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+body.dark .form-container {
+    background-color: #1e1e1e;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------- Typography ---------- */
+body.dark .form-title,
+body.dark .form-section-title {
+    color: #e0e0e0;
+}
+
+body.dark .form-group label {
+    color: #bdbdbd;
+}
+
+/* ---------- Form Inputs ---------- */
+body.dark .form-group input,
+body.dark .form-group select,
+body.dark .form-group textarea {
+    background-color: #2c2c2c;
+    border-color: #444;
+    color: #e0e0e0;
+}
+
+body.dark .form-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23bbb' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+}
+
+body.dark .form-group input:focus,
+body.dark .form-group select:focus,
+body.dark .form-group textarea:focus {
+    border-color: #64b5f6;
+    box-shadow: 0 0 0 3px rgba(100, 181, 246, 0.2);
+}
+
+body.dark .form-group input.invalid,
+body.dark .form-group select.invalid {
+    border-color: #ef5350;
+    box-shadow: 0 0 0 3px rgba(239, 83, 80, 0.15);
+}
+
+body.dark .form-group input[readonly] {
+    background-color: #333;
+    color: #888;
+}
+
+body.dark .form-group input::placeholder {
+    color: #777;
+}
+
+/* ---------- Buttons ---------- */
+body.dark .btn-primary {
+    background-color: #1976D2;
+}
+
+body.dark .btn-primary:active {
+    background-color: #1565C0;
+}
+
+body.dark .btn-primary:disabled {
+    background-color: #424242;
+    color: #757575;
+}
+
+body.dark .btn-secondary {
+    background-color: #1a237e;
+    color: #90caf9;
+}
+
+body.dark .btn-secondary:active {
+    background-color: #283593;
+}
+
+body.dark .btn-danger {
+    background-color: #4e0000;
+    color: #ef9a9a;
+}
+
+body.dark .btn-danger:active {
+    background-color: #621111;
+}
+
+/* ---------- Footer ---------- */
+body.dark .app-footer {
+    color: #888;
+}
+
+/* ---------- Borders & Separators ---------- */
+body.dark .form-section-title {
+    border-top-color: #333;
+}
+
+body.dark .search-results .result-item {
+    border-bottom-color: #333;
+}
+
+body.dark .search-results .result-item:active {
+    background-color: #263238;
+}
+
+body.dark .guest-list .guest-item {
+    border-bottom-color: #333;
+}
+
+/* ---------- Riepilogo ---------- */
+body.dark .riepilogo-card {
+    background-color: #2c2c2c;
+}
+
+body.dark .riepilogo-card .label {
+    color: #bdbdbd;
+}
+
+body.dark .riepilogo-card .count {
+    color: #64b5f6;
+}
+
+/* ---------- Error & Info Messages ---------- */
+body.dark .error-msg {
+    color: #ef5350;
+}
+
+body.dark .info-message {
+    color: #999;
+}
+
+/* ---------- Toast ---------- */
+body.dark .toast {
+    background-color: #424242;
+}
+
+body.dark .toast.toast-success {
+    background-color: #1b5e20;
+}
+
+body.dark .toast.toast-error {
+    background-color: #b71c1c;
+}
+
+/* ---------- Offline Banner ---------- */
+body.dark .offline-banner {
+    background-color: #e65100;
+}
