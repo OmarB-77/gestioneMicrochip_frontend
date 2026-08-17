@@ -1,7 +1,6 @@
 // auth.js — Autenticazione, gestione sessione e protezione rotte
 import { supabase } from './supabase-client.js'
-
-const LOGIN_PATH = '/pages/login.html'
+import { LOGIN_PAGE } from './config.js'
 
 /**
  * Effettua il login con email e password.
@@ -22,7 +21,7 @@ export async function login(email, password) {
  */
 export async function logout() {
     await supabase.auth.signOut()
-    window.location.href = LOGIN_PATH
+    window.location.href = LOGIN_PAGE
 }
 
 /**
@@ -82,14 +81,14 @@ export async function requireAuth(allowedRoles = ['admin', 'guest']) {
     const user = await getCurrentUser()
 
     if (!user) {
-        window.location.href = LOGIN_PATH
+        window.location.href = LOGIN_PAGE
         return null
     }
 
     const role = await getUserRole()
 
     if (!role || !allowedRoles.includes(role)) {
-        window.location.href = LOGIN_PATH
+        window.location.href = LOGIN_PAGE
         return null
     }
 
@@ -105,13 +104,13 @@ export async function requireAuth(allowedRoles = ['admin', 'guest']) {
 export function initAuthListener() {
     supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_OUT') {
-            window.location.href = LOGIN_PATH
+            window.location.href = LOGIN_PAGE
             return
         }
 
         if (event === 'TOKEN_REFRESHED' && !session) {
             // Il refresh del token è fallito: sessione non più valida
-            window.location.href = LOGIN_PATH
+            window.location.href = LOGIN_PAGE
         }
     })
 }

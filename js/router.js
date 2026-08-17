@@ -1,8 +1,6 @@
 // router.js — Navigazione tra pagine e protezione rotte per ruolo
 import { getCurrentUser, getUserRole, getAssociazione } from './auth.js'
-
-const LOGIN_PATH = '/pages/login.html'
-const HOME_PATH = '/index.html'
+import { LOGIN_PAGE, HOME_PAGE } from './config.js'
 
 /**
  * Mappa delle rotte protette e i ruoli autorizzati.
@@ -31,14 +29,14 @@ export async function initRouter() {
     const user = await getCurrentUser()
 
     if (!user) {
-        window.location.href = LOGIN_PATH
+        window.location.href = LOGIN_PAGE
         return null
     }
 
     const role = await getUserRole()
 
     if (!role) {
-        window.location.href = LOGIN_PATH
+        window.location.href = LOGIN_PAGE
         return null
     }
 
@@ -67,7 +65,7 @@ export async function protectPage(allowedRoles = ['admin', 'guest']) {
     const user = await getCurrentUser()
 
     if (!user) {
-        window.location.href = LOGIN_PATH
+        window.location.href = LOGIN_PAGE
         return null
     }
 
@@ -75,7 +73,7 @@ export async function protectPage(allowedRoles = ['admin', 'guest']) {
 
     if (!role || !allowedRoles.includes(role)) {
         // Utente autenticato ma senza il ruolo richiesto: torna alla home
-        window.location.href = HOME_PATH
+        window.location.href = HOME_PAGE
         return null
     }
 

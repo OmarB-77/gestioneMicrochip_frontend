@@ -35,5 +35,33 @@
     </main>
 
     <script type="module" src="../js/app.js"></script>
+    <script type="module">
+        import { login } from '../js/auth.js'
+        import { HOME_PAGE } from '../js/config.js'
+
+        const form = document.getElementById('login-form')
+        const loginError = document.getElementById('login-error')
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault()
+            loginError.textContent = ''
+
+            const email = document.getElementById('email').value.trim()
+            const password = document.getElementById('password').value
+
+            if (!email || !password) {
+                loginError.textContent = 'Inserisci email e password'
+                return
+            }
+
+            const { user, error } = await login(email, password)
+            if (error) {
+                loginError.textContent = error
+                return
+            }
+
+            window.location.href = HOME_PAGE
+        })
+    </script>
 </body>
 </html>

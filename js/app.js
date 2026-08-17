@@ -1,11 +1,12 @@
 import { VERSION } from "./version.js"
 import { initDarkMode, toggleDarkMode } from "./ui-utils.js"
 import { initRouter } from "./router.js"
+import { SW_PATH } from "./config.js"
 
 async function initServiceWorker() {
     if (!("serviceWorker" in navigator)) return
     try {
-        const reg = await navigator.serviceWorker.register("/sw.js")
+        const reg = await navigator.serviceWorker.register(SW_PATH)
         if (reg.waiting) { window.location.reload(); return }
         reg.addEventListener("updatefound", () => {
             const newSW = reg.installing
@@ -37,7 +38,7 @@ async function init() {
     initDarkModeToggle()
     await initServiceWorker()
     const path = window.location.pathname
-    if (path === "/" || path === "/index.html" || path.endsWith("/index.html")) {
+    if (path.endsWith('/') || path.endsWith('/index.html')) {
         await initRouter()
     }
 }
