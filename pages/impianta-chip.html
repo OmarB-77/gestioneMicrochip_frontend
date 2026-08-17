@@ -16,33 +16,59 @@
     <main class="main-content">
         <section class="form-container">
             <!-- Selezione chip -->
+            <h2 class="form-title">Seleziona chip disponibile</h2>
+
             <div class="form-group">
-                <label for="chip-select">Seleziona chip disponibile</label>
-                <select id="chip-select" name="chip_select">
-                    <option value="">— Seleziona —</option>
-                </select>
-                <button type="button" id="btn-scan" class="btn btn-secondary">Scansiona barcode</button>
-                <div id="scanner-container" class="scanner-area" hidden></div>
-                <span class="error-msg" id="chip-select-error"></span>
+                <label for="chip-search">Cerca per numero chip</label>
+                <input type="text" id="chip-search" placeholder="Digita almeno 3 cifre..."
+                       inputmode="numeric" autocomplete="off">
             </div>
 
-            <!-- Form dati gatto -->
-            <form id="impianta-chip-form" novalidate>
-                <div class="form-group">
-                    <label for="nome-gatto">Nome gatto (max 50 caratteri)</label>
-                    <input type="text" id="nome-gatto" name="nome_gatto" maxlength="50" required>
-                    <span class="error-msg" id="nome-gatto-error"></span>
+            <button type="button" id="btn-scan" class="btn btn-secondary btn-full">
+                📷 Scansiona barcode
+            </button>
+            <div id="scanner-container" class="scanner-area" hidden></div>
+
+            <div id="chip-list-container">
+                <div class="search-results" id="chip-list" role="listbox" aria-label="Lista chip disponibili">
+                    <!-- Populated dynamically -->
                 </div>
+                <p class="info-message" id="chip-list-empty" hidden>Nessun chip disponibile in magazzino</p>
+                <p class="info-message" id="chip-list-loading">Caricamento chip...</p>
+            </div>
+
+            <span class="error-msg" id="chip-select-error"></span>
+
+            <!-- Form dati gatto (hidden until a chip is selected) -->
+            <form id="impianta-chip-form" novalidate hidden>
+                <h2 class="form-section-title">Chip selezionato</h2>
                 <div class="form-group">
-                    <label for="colore-mantello">Colore mantello (max 50 caratteri)</label>
-                    <input type="text" id="colore-mantello" name="colore_mantello" maxlength="50" required>
-                    <span class="error-msg" id="colore-mantello-error"></span>
+                    <label for="chip-selezionato">Numero chip</label>
+                    <input type="text" id="chip-selezionato" readonly>
                 </div>
+
+                <h2 class="form-section-title">Dati del gatto</h2>
+
+                <div class="form-group">
+                    <label for="nome-gatto">Nome gatto</label>
+                    <input type="text" id="nome-gatto" name="nome_gatto" maxlength="50"
+                           required placeholder="Max 50 caratteri">
+                    <span class="error-msg"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="colore-mantello">Colore mantello</label>
+                    <input type="text" id="colore-mantello" name="colore_mantello" maxlength="50"
+                           required placeholder="Max 50 caratteri">
+                    <span class="error-msg"></span>
+                </div>
+
                 <div class="form-group">
                     <label for="data-nascita-gatto">Data di nascita</label>
                     <input type="date" id="data-nascita-gatto" name="data_nascita_gatto" required>
-                    <span class="error-msg" id="data-nascita-gatto-error"></span>
+                    <span class="error-msg"></span>
                 </div>
+
                 <div class="form-group">
                     <label for="genere-gatto">Genere</label>
                     <select id="genere-gatto" name="genere_gatto" required>
@@ -50,25 +76,394 @@
                         <option value="maschio">Maschio</option>
                         <option value="femmina">Femmina</option>
                     </select>
-                    <span class="error-msg" id="genere-gatto-error"></span>
+                    <span class="error-msg"></span>
                 </div>
-                <div class="form-group">
+
+                <div class="form-group" id="associazione-group">
                     <label for="associazione">Associazione</label>
+                    <!-- Admin: select; Guest: readonly input (swapped dynamically) -->
                     <select id="associazione" name="associazione_id" required>
                         <option value="">— Seleziona —</option>
                     </select>
-                    <span class="error-msg" id="associazione-error"></span>
+                    <span class="error-msg"></span>
                 </div>
+
                 <div class="form-group">
                     <label for="data-impianto">Data di impianto</label>
                     <input type="date" id="data-impianto" name="data_impianto" required>
-                    <span class="error-msg" id="data-impianto-error"></span>
+                    <span class="error-msg"></span>
                 </div>
+
                 <button type="submit" class="btn btn-primary btn-full">Conferma impianto</button>
             </form>
         </section>
     </main>
 
-    <script type="module" src="../js/app.js"></script>
+    <script type="module">
+        import { protectPage } from '../js/router.js'
+        import { initDarkMode, showToast, showFieldError, clearAllErrors, scrollToFirstError } from '../js/ui-utils.js'
+        import { supabase } from '../js/supabase-client.js'
+        import { startScan, stopScan } from '../js/scanner.js'
+
+        // Inizializza dark mode
+        initDarkMode()
+
+        // Guard: admin e guest possono accedere
+        const ctx = await protectPage(['admin', 'guest'])
+        if (!ctx) throw new Error('Accesso negato')
+
+        const { role, associazione: userAssociazioneId } = ctx
+
+        // =====================================================================
+        // DOM References
+        // =====================================================================
+        const chipSearch = document.getElementById('chip-search')
+        const chipList = document.getElementById('chip-list')
+        const chipListEmpty = document.getElementById('chip-list-empty')
+        const chipListLoading = document.getElementById('chip-list-loading')
+        const chipSelectError = document.getElementById('chip-select-error')
+        const btnScan = document.getElementById('btn-scan')
+        const scannerContainer = document.getElementById('scanner-container')
+        const form = document.getElementById('impianta-chip-form')
+        const chipSelezionato = document.getElementById('chip-selezionato')
+        const associazioneGroup = document.getElementById('associazione-group')
+
+        // =====================================================================
+        // State
+        // =====================================================================
+        let allChips = []          // All available chips from DB
+        let selectedChip = null    // Currently selected chip object
+
+        // =====================================================================
+        // Init: load chips and associations
+        // =====================================================================
+
+        // Set today's date as default and max for date fields
+        const today = new Date().toISOString().split('T')[0]
+        const dataImpiantoInput = document.getElementById('data-impianto')
+        dataImpiantoInput.value = today
+        dataImpiantoInput.max = today
+
+        const dataNascitaInput = document.getElementById('data-nascita-gatto')
+        dataNascitaInput.max = today
+
+        // Load available chips
+        async function loadChips() {
+            chipListLoading.hidden = false
+            chipListEmpty.hidden = true
+            chipList.innerHTML = ''
+
+            const { data, error } = await supabase
+                .from('chips')
+                .select('id, numero_chip, data_carico')
+                .eq('stato', 'disponibile')
+                .order('numero_chip', { ascending: true })
+
+            chipListLoading.hidden = true
+
+            if (error) {
+                showToast('Errore nel caricamento dei chip', 'error')
+                chipListEmpty.textContent = 'Errore nel caricamento'
+                chipListEmpty.hidden = false
+                return
+            }
+
+            allChips = data || []
+
+            if (allChips.length === 0) {
+                chipListEmpty.hidden = false
+            } else {
+                renderChipList(allChips)
+            }
+        }
+
+        // Setup association field based on role
+        async function setupAssociazione() {
+            if (role === 'admin') {
+                // Admin: load all associations into select
+                const { data, error } = await supabase
+                    .from('associazioni')
+                    .select('id, nome')
+                    .order('nome', { ascending: true })
+
+                if (!error && data) {
+                    const select = document.getElementById('associazione')
+                    data.forEach(assoc => {
+                        const option = document.createElement('option')
+                        option.value = assoc.id
+                        option.textContent = assoc.nome
+                        select.appendChild(option)
+                    })
+                }
+            } else {
+                // Guest: replace select with readonly input showing association name
+                const { data, error } = await supabase
+                    .from('associazioni')
+                    .select('id, nome')
+                    .eq('id', userAssociazioneId)
+                    .single()
+
+                const assocName = (!error && data) ? data.nome : 'N/D'
+
+                // Replace select with readonly input
+                const select = document.getElementById('associazione')
+                const input = document.createElement('input')
+                input.type = 'text'
+                input.id = 'associazione'
+                input.name = 'associazione_id'
+                input.value = assocName
+                input.readOnly = true
+                input.dataset.assocId = userAssociazioneId || ''
+                select.replaceWith(input)
+            }
+        }
+
+        await Promise.all([loadChips(), setupAssociazione()])
+
+        // =====================================================================
+        // Render chip list
+        // =====================================================================
+        function renderChipList(chips) {
+            chipList.innerHTML = ''
+            chipListEmpty.hidden = true
+
+            if (chips.length === 0) {
+                chipListEmpty.textContent = 'Nessun chip corrisponde alla ricerca'
+                chipListEmpty.hidden = false
+                return
+            }
+
+            chips.forEach(chip => {
+                const item = document.createElement('div')
+                item.className = 'result-item'
+                item.role = 'option'
+                item.tabIndex = 0
+                item.dataset.chipId = chip.id
+                item.dataset.chipNumero = chip.numero_chip
+                item.innerHTML = `
+                    <span>${chip.numero_chip}</span>
+                    <span style="font-size:0.75rem;color:#666">${formatDateDisplay(chip.data_carico)}</span>
+                `
+                item.addEventListener('click', () => selectChip(chip))
+                item.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        selectChip(chip)
+                    }
+                })
+                chipList.appendChild(item)
+            })
+        }
+
+        function formatDateDisplay(dateStr) {
+            if (!dateStr) return ''
+            const [y, m, d] = dateStr.split('-')
+            return `${d}/${m}/${y}`
+        }
+
+        // =====================================================================
+        // Search/filter chips (client-side)
+        // =====================================================================
+        chipSearch.addEventListener('input', () => {
+            const query = chipSearch.value.trim()
+            if (query.length === 0) {
+                renderChipList(allChips)
+                return
+            }
+            const filtered = allChips.filter(c => c.numero_chip.includes(query))
+            renderChipList(filtered)
+        })
+
+        // =====================================================================
+        // Select a chip → show the cat form
+        // =====================================================================
+        function selectChip(chip) {
+            selectedChip = chip
+            chipSelezionato.value = chip.numero_chip
+            chipSelectError.textContent = ''
+
+            // Show the form
+            form.hidden = false
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+
+        // =====================================================================
+        // Scanner
+        // =====================================================================
+        let scanning = false
+
+        btnScan.addEventListener('click', async () => {
+            if (scanning) {
+                await stopScan()
+                scannerContainer.hidden = true
+                btnScan.textContent = '📷 Scansiona barcode'
+                scanning = false
+                return
+            }
+
+            scanning = true
+            scannerContainer.hidden = false
+            btnScan.textContent = '✕ Chiudi scanner'
+
+            await startScan(
+                'scanner-container',
+                // onSuccess
+                (decodedText) => {
+                    scanning = false
+                    scannerContainer.hidden = true
+                    btnScan.textContent = '📷 Scansiona barcode'
+
+                    // Find the chip among available ones
+                    const found = allChips.find(c => c.numero_chip === decodedText)
+                    if (found) {
+                        selectChip(found)
+                        showToast(`Chip ${decodedText} selezionato`, 'success')
+                    } else {
+                        showToast('Chip non trovato tra quelli disponibili in magazzino', 'error')
+                    }
+                },
+                // onError
+                (errorType) => {
+                    scanning = false
+                    scannerContainer.hidden = true
+                    btnScan.textContent = '📷 Scansiona barcode'
+
+                    if (errorType === 'TIMEOUT') {
+                        showToast('Scansione non riuscita entro il tempo limite. Riprova o procedi manualmente.', 'error')
+                    } else {
+                        showToast('Impossibile accedere alla fotocamera. Verifica i permessi.', 'error')
+                    }
+                }
+            )
+        })
+
+        // =====================================================================
+        // Form submission
+        // =====================================================================
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault()
+            clearAllErrors(form)
+
+            if (!selectedChip) {
+                chipSelectError.textContent = 'Seleziona un chip prima di procedere'
+                return
+            }
+
+            // Read form values
+            const nomeGatto = document.getElementById('nome-gatto').value.trim()
+            const coloreMantello = document.getElementById('colore-mantello').value.trim()
+            const dataNascita = document.getElementById('data-nascita-gatto').value
+            const genere = document.getElementById('genere-gatto').value
+            const dataImpianto = document.getElementById('data-impianto').value
+            const assocEl = document.getElementById('associazione')
+            const associazioneId = role === 'guest'
+                ? assocEl.dataset.assocId
+                : assocEl.value
+
+            // Validate
+            let hasErrors = false
+
+            // Nome gatto: required, max 50
+            const nomeInput = document.getElementById('nome-gatto')
+            if (!nomeGatto) {
+                showFieldError(nomeInput, 'Il nome del gatto è obbligatorio')
+                hasErrors = true
+            } else if (nomeGatto.length > 50) {
+                showFieldError(nomeInput, 'Massimo 50 caratteri')
+                hasErrors = true
+            }
+
+            // Colore mantello: required, max 50
+            const coloreInput = document.getElementById('colore-mantello')
+            if (!coloreMantello) {
+                showFieldError(coloreInput, 'Il colore del mantello è obbligatorio')
+                hasErrors = true
+            } else if (coloreMantello.length > 50) {
+                showFieldError(coloreInput, 'Massimo 50 caratteri')
+                hasErrors = true
+            }
+
+            // Data nascita: required, not future
+            const nascitaInput = document.getElementById('data-nascita-gatto')
+            if (!dataNascita) {
+                showFieldError(nascitaInput, 'La data di nascita è obbligatoria')
+                hasErrors = true
+            } else {
+                const nascitaDate = new Date(dataNascita)
+                const todayDate = new Date()
+                todayDate.setHours(0, 0, 0, 0)
+                if (nascitaDate > todayDate) {
+                    showFieldError(nascitaInput, 'La data non può essere nel futuro')
+                    hasErrors = true
+                }
+            }
+
+            // Genere: required
+            const genereInput = document.getElementById('genere-gatto')
+            if (!genere) {
+                showFieldError(genereInput, 'Seleziona il genere')
+                hasErrors = true
+            }
+
+            // Associazione: required
+            if (!associazioneId) {
+                showFieldError(assocEl, 'Seleziona un\'associazione')
+                hasErrors = true
+            }
+
+            // Data impianto: required, not future
+            const impiantoInput = document.getElementById('data-impianto')
+            if (!dataImpianto) {
+                showFieldError(impiantoInput, 'La data di impianto è obbligatoria')
+                hasErrors = true
+            } else {
+                const impiantoDate = new Date(dataImpianto)
+                const todayDate = new Date()
+                todayDate.setHours(0, 0, 0, 0)
+                if (impiantoDate > todayDate) {
+                    showFieldError(impiantoInput, 'La data non può essere nel futuro')
+                    hasErrors = true
+                }
+            }
+
+            if (hasErrors) {
+                scrollToFirstError(form)
+                return
+            }
+
+            // Submit to Supabase: update the chip
+            const { error } = await supabase
+                .from('chips')
+                .update({
+                    stato: 'impiantato',
+                    nome_gatto: nomeGatto,
+                    colore_mantello: coloreMantello,
+                    data_nascita_gatto: dataNascita,
+                    genere_gatto: genere,
+                    associazione_id: associazioneId,
+                    data_impianto: dataImpianto
+                })
+                .eq('id', selectedChip.id)
+                .eq('stato', 'disponibile')  // safety: only update if still available
+
+            if (error) {
+                showToast('Errore durante il salvataggio. Riprova.', 'error')
+                return
+            }
+
+            // Success
+            showToast('Chip impiantato con successo!', 'success')
+
+            // Reset state and reload chips
+            selectedChip = null
+            form.reset()
+            form.hidden = true
+            dataImpiantoInput.value = today
+            dataImpiantoInput.max = today
+            chipSearch.value = ''
+
+            await loadChips()
+        })
+    </script>
 </body>
 </html>
