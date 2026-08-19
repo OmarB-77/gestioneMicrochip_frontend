@@ -1,7 +1,7 @@
 // Service Worker — Gestione Microchip PWA
 // Strategia: Network-first con fallback cache, timeout 3 secondi
 
-const CACHE_NAME = 'microchip-v0.5.1'
+const CACHE_NAME = 'microchip-v1.0.0'
 const NETWORK_TIMEOUT = 3000
 
 // Install: pre-cache shell minimo (opzionale, il network-first popola la cache)
