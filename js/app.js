@@ -71,7 +71,7 @@ async function init() {
             // Admin: reveal admin cards
             if (ctx.role === 'admin') {
                 document.querySelectorAll('[data-role="admin"]').forEach(el => {
-                    el.style.display = ''
+                    el.style.display = 'flex'
                 })
             }
             setupUserHeader(ctx.displayName)
