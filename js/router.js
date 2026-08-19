@@ -43,14 +43,6 @@ export async function initRouter() {
     const associazione = await getAssociazione()
     const displayName = await getDisplayName()
 
-    // Nascondi le card riservate all'admin se l'utente è guest
-    if (role === 'guest') {
-        const adminCards = document.querySelectorAll('[data-role="admin"]')
-        adminCards.forEach(card => {
-            card.style.display = 'none'
-        })
-    }
-
     return { user, role, associazione, displayName }
 }
 

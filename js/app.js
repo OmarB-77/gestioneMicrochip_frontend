@@ -47,17 +47,41 @@ function setupUserHeader(displayName) {
     }
 }
 
+function revealContent() {
+    const loading = document.getElementById('loading-screen')
+    const header = document.getElementById('app-header')
+    const main = document.getElementById('app-main')
+    const footer = document.getElementById('app-footer')
+
+    if (header) header.hidden = false
+    if (main) main.hidden = false
+    if (footer) footer.hidden = false
+    if (loading) loading.remove()
+}
+
 async function init() {
-    displayVersion()
-    initDarkModeToggle()
+    initDarkModeToggle()  // apply dark mode BEFORE anything else (for spinner theme)
     initConnectivity()
     await initServiceWorker()
+
     const path = window.location.pathname
     if (path.endsWith('/') || path.endsWith('/index.html')) {
         const ctx = await initRouter()
         if (ctx) {
+            // Admin: reveal admin cards
+            if (ctx.role === 'admin') {
+                document.querySelectorAll('[data-role="admin"]').forEach(el => {
+                    el.style.display = ''
+                })
+            }
             setupUserHeader(ctx.displayName)
+            displayVersion()
+            revealContent()
         }
+        // If ctx is null, initRouter already did a redirect — do nothing
+    } else {
+        // Not the home page — just show version
+        displayVersion()
     }
 }
 
