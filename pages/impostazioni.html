@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impostazioni — Gestione Microchip</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dark.css" id="dark-theme-link" disabled>
+</head>
+<body>
+    <header class="app-header">
+        <a href="../index.html" class="btn-back" aria-label="Torna alla home">← Home</a>
+        <h1 class="app-title">Impostazioni</h1>
+    </header>
+
+    <main class="main-content">
+        <section class="form-container">
+            <h2 class="form-title">Fotocamera per scansione barcode</h2>
+            <div id="camera-section">
+                <p id="camera-loading" class="info-message">Caricamento fotocamere...</p>
+                <ul id="camera-list" class="camera-list" hidden></ul>
+                <p id="camera-empty" class="info-message" hidden>Nessuna fotocamera rilevata</p>
+                <p id="camera-error" class="info-message" hidden>Permesso fotocamera negato. Consenti l'accesso nelle impostazioni del browser.</p>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
+        import { protectPage } from '../js/router.js'
+        import { initDarkMode, showToast } from '../js/ui-utils.js'
+        import { Html5Qrcode } from 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/+esm'
+
+        initDarkMode()
+
+        const ctx = await protectPage(['admin', 'guest'])
+        if (!ctx) throw new Error('Accesso negato')
+
+        const cameraLoading = document.getElementById('camera-loading')
+        const cameraList = document.getElementById('camera-list')
+        const cameraEmpty = document.getElementById('camera-empty')
+        const cameraError = document.getElementById('camera-error')
+
+        const STORAGE_KEY = 'preferred_camera_id'
+        const savedCameraId = localStorage.getItem(STORAGE_KEY)
+
+        try {
+            const cameras = await Html5Qrcode.getCameras()
+
+            cameraLoading.hidden = true
+
+            if (!cameras || cameras.length === 0) {
+                cameraEmpty.hidden = false
+            } else {
+                cameraList.hidden = false
+                cameras.forEach((camera, index) => {
+                    const li = document.createElement('li')
+                    const label = document.createElement('label')
+                    const radio = document.createElement('input')
+
+                    radio.type = 'radio'
+                    radio.name = 'camera'
+                    radio.value = camera.id
+                    radio.id = `camera-${index}`
+
+                    if (camera.id === savedCameraId) {
+                        radio.checked = true
+                    }
+
+                    radio.addEventListener('change', () => {
+                        localStorage.setItem(STORAGE_KEY, camera.id)
+                        showToast('Fotocamera salvata', 'success')
+                    })
+
+                    const labelText = document.createTextNode(camera.label || `Fotocamera ${index + 1}`)
+
+                    label.appendChild(radio)
+                    label.appendChild(labelText)
+                    li.appendChild(label)
+                    cameraList.appendChild(li)
+                })
+            }
+        } catch (err) {
+            cameraLoading.hidden = true
+            cameraError.hidden = false
+        }
+    </script>
+</body>
+</html>

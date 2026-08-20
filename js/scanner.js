@@ -42,36 +42,57 @@ export async function startScan(containerId, onSuccess, onError) {
         onError('TIMEOUT')
     }, SCAN_TIMEOUT_MS)
 
-    try {
-        await scanner.start(
-            { facingMode: 'environment' },
-            SCAN_CONFIG,
-            async (decodedText) => {
-                // Codice decodificato con successo
-                if (activeTimeoutId) {
-                    clearTimeout(activeTimeoutId)
-                    activeTimeoutId = null
-                }
-                try {
-                    await scanner.stop()
-                } catch (e) {
-                    // Ignora errori nello stop
-                }
-                activeScanner = null
-                onSuccess(decodedText)
-            },
-            () => {
-                // Errori intermedi di decodifica frame - ignorati
-            }
-        )
-    } catch (err) {
-        // Errore nell'avvio della fotocamera (permesso negato, ecc.)
+    const onDecoded = async (decodedText) => {
+        // Codice decodificato con successo
         if (activeTimeoutId) {
             clearTimeout(activeTimeoutId)
             activeTimeoutId = null
         }
+        try {
+            await scanner.stop()
+        } catch (e) {
+            // Ignora errori nello stop
+        }
         activeScanner = null
-        onError('CAMERA_ERROR')
+        onSuccess(decodedText)
+    }
+
+    const onFrame = () => {
+        // Errori intermedi di decodifica frame - ignorati
+    }
+
+    const preferredCameraId = localStorage.getItem('preferred_camera_id')
+
+    let cameraConfig
+    if (preferredCameraId) {
+        cameraConfig = { deviceId: { exact: preferredCameraId } }
+    } else {
+        cameraConfig = { facingMode: 'environment' }
+    }
+
+    try {
+        await scanner.start(cameraConfig, SCAN_CONFIG, onDecoded, onFrame)
+    } catch (err) {
+        // If preferred camera failed, try fallback
+        if (preferredCameraId) {
+            try {
+                await scanner.start({ facingMode: 'environment' }, SCAN_CONFIG, onDecoded, onFrame)
+            } catch (fallbackErr) {
+                if (activeTimeoutId) {
+                    clearTimeout(activeTimeoutId)
+                    activeTimeoutId = null
+                }
+                activeScanner = null
+                onError('CAMERA_ERROR')
+            }
+        } else {
+            if (activeTimeoutId) {
+                clearTimeout(activeTimeoutId)
+                activeTimeoutId = null
+            }
+            activeScanner = null
+            onError('CAMERA_ERROR')
+        }
     }
 }
 
