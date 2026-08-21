@@ -17,7 +17,7 @@
         <section class="form-container">
             <!-- Search input -->
             <div class="form-group">
-                <label for="search-input">Cerca per numero chip (min 3 caratteri)</label>
+                <label for="search-input">Cerca per numero chip</label>
                 <input type="text" id="search-input" name="search" inputmode="numeric"
                        placeholder="Inserisci numero chip..." autocomplete="off">
             </div>
@@ -26,6 +26,7 @@
             <div class="search-results" id="search-results" role="listbox" aria-label="Risultati ricerca chip">
                 <!-- Populated dynamically -->
             </div>
+            <button type="button" id="btn-load-more" class="btn btn-secondary btn-full" hidden>Carica altri</button>
             <p id="no-results" class="info-message" hidden>Nessun chip corrisponde al criterio inserito.</p>
             <p id="loading-msg" class="info-message" hidden>Ricerca in corso...</p>
 
@@ -221,6 +222,7 @@
         const searchResults = document.getElementById('search-results')
         const noResults = document.getElementById('no-results')
         const loadingMsg = document.getElementById('loading-msg')
+        const btnLoadMore = document.getElementById('btn-load-more')
         const chipDetail = document.getElementById('chip-detail')
         const form = document.getElementById('modifica-chip-form')
         const btnBackToList = document.getElementById('btn-back-to-list')
@@ -243,6 +245,9 @@
         let selectedChip = null      // Currently selected chip full record
         let debounceTimer = null     // Debounce timer for search input
         let associazioni = []        // Cached associations list
+        const PAGE_SIZE = 20
+        let currentOffset = 0
+        let isFiltering = false
 
         // State index for section visibility
         const STATO_INDEX = { disponibile: 0, impiantato: 1, adottato: 2, registrato: 3 }
@@ -289,34 +294,75 @@
 
         await loadAssociazioni()
         await setupAssociazioneField()
+        await loadRecentChips()
 
         // =====================================================================
-        // Search with debounce (300ms)
+        // Search with debounce and pagination
         // =====================================================================
         searchInput.addEventListener('input', () => {
             const query = searchInput.value.trim()
+            clearTimeout(debounceTimer)
 
-            // Clear previous results if less than 3 chars
-            if (query.length < 3) {
-                searchResults.innerHTML = ''
-                noResults.hidden = true
-                loadingMsg.hidden = true
+            if (query.length === 0) {
+                isFiltering = false
+                loadRecentChips(false)
                 return
             }
 
-            // Debounce
-            clearTimeout(debounceTimer)
-            debounceTimer = setTimeout(() => {
-                performSearch(query)
-            }, 300)
+            isFiltering = true
+            debounceTimer = setTimeout(() => performSearch(query), 300)
         })
 
+        // Load recent chips (paginated)
+        async function loadRecentChips(append = false) {
+            if (!append) {
+                searchResults.innerHTML = ''
+                currentOffset = 0
+            }
+            loadingMsg.hidden = false
+            noResults.hidden = true
+            btnLoadMore.hidden = true
+
+            let query = supabase
+                .from('chips')
+                .select('id, numero_chip, stato, nome_gatto, associazione_id')
+                .order('created_at', { ascending: false })
+                .range(currentOffset, currentOffset + PAGE_SIZE - 1)
+
+            // Guest filter
+            if (role === 'guest') {
+                query = query.eq('associazione_id', userAssociazioneId)
+            }
+
+            const { data, error } = await query
+            loadingMsg.hidden = true
+
+            if (error) {
+                showToast('Errore nel caricamento. Riprova.', 'error')
+                return
+            }
+
+            if (!data || data.length === 0) {
+                if (!append) noResults.hidden = false
+                return
+            }
+
+            renderResults(data, append)
+            currentOffset += data.length
+
+            // Show "load more" if we got a full page
+            if (data.length === PAGE_SIZE) {
+                btnLoadMore.hidden = false
+            }
+        }
+
+        // Search with filter
         async function performSearch(query) {
             loadingMsg.hidden = false
             noResults.hidden = true
             searchResults.innerHTML = ''
+            btnLoadMore.hidden = true
 
-            // Build query
             let dbQuery = supabase
                 .from('chips')
                 .select('id, numero_chip, stato, nome_gatto, associazione_id')
@@ -324,15 +370,11 @@
                 .order('numero_chip', { ascending: true })
                 .limit(50)
 
-            // Guest filter: only impiantato+ of own association
             if (role === 'guest') {
-                dbQuery = dbQuery
-                    .neq('stato', 'disponibile')
-                    .eq('associazione_id', userAssociazioneId)
+                dbQuery = dbQuery.eq('associazione_id', userAssociazioneId)
             }
 
             const { data, error } = await dbQuery
-
             loadingMsg.hidden = true
 
             if (error) {
@@ -345,14 +387,19 @@
                 return
             }
 
-            renderResults(data)
+            renderResults(data, false)
         }
+
+        // "Load more" button
+        btnLoadMore.addEventListener('click', () => loadRecentChips(true))
 
         // =====================================================================
         // Render search results
         // =====================================================================
-        function renderResults(chips) {
-            searchResults.innerHTML = ''
+        function renderResults(chips, append = false) {
+            if (!append) {
+                searchResults.innerHTML = ''
+            }
             noResults.hidden = true
 
             chips.forEach(chip => {
@@ -424,6 +471,7 @@
             // Hide search, show detail
             searchInput.parentElement.style.display = 'none'
             searchResults.style.display = 'none'
+            btnLoadMore.hidden = true
             noResults.hidden = true
             loadingMsg.hidden = true
             chipDetail.hidden = false
@@ -503,9 +551,11 @@
             searchResults.style.display = ''
             selectedChip = null
 
-            // Re-show results if there was a previous search
-            if (searchInput.value.trim().length >= 3) {
+            // Re-show results based on current mode
+            if (isFiltering && searchInput.value.trim().length > 0) {
                 performSearch(searchInput.value.trim())
+            } else {
+                loadRecentChips(false)
             }
         })
 
