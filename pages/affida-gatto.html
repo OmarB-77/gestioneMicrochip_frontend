@@ -201,7 +201,7 @@
         // =====================================================================
 
         // Set today's date as default and max for data-adozione
-        const today = new Date().toISOString().split('T')[0]
+        const today = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') })()
         const dataAdozioneInput = document.getElementById('data-adozione')
         dataAdozioneInput.value = today
         dataAdozioneInput.max = today
@@ -566,7 +566,7 @@
                 showFieldError(dataAdozioneEl, 'La data di adozione è obbligatoria')
                 hasErrors = true
             } else {
-                const todayStr = new Date().toISOString().split('T')[0]
+                const todayStr = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') })()
                 if (dataAdozione > todayStr) {
                     showFieldError(dataAdozioneEl, 'La data non può essere nel futuro')
                     hasErrors = true

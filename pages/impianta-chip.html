@@ -139,7 +139,7 @@
         // =====================================================================
 
         // Set today's date as default and max for date fields
-        const today = new Date().toISOString().split('T')[0]
+        const today = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') })()
         const dataImpiantoInput = document.getElementById('data-impianto')
         dataImpiantoInput.value = today
         dataImpiantoInput.max = today
@@ -397,7 +397,7 @@
                 showFieldError(nascitaInput, 'La data di nascita è obbligatoria')
                 hasErrors = true
             } else {
-                const todayStr = new Date().toISOString().split('T')[0]
+                const todayStr = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') })()
                 if (dataNascita > todayStr) {
                     showFieldError(nascitaInput, 'La data non può essere nel futuro')
                     hasErrors = true
@@ -423,7 +423,7 @@
                 showFieldError(impiantoInput, 'La data di impianto è obbligatoria')
                 hasErrors = true
             } else {
-                const todayStr = new Date().toISOString().split('T')[0]
+                const todayStr = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') })()
                 if (dataImpianto > todayStr) {
                     showFieldError(impiantoInput, 'La data non può essere nel futuro')
                     hasErrors = true

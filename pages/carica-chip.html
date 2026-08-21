@@ -57,7 +57,7 @@
 
         // Imposta la data di carico di default a oggi
         const dataCaricoInput = document.getElementById('data-carico')
-        const today = new Date().toISOString().split('T')[0]
+        const today = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') })()
         dataCaricoInput.value = today
         dataCaricoInput.max = today
 
@@ -134,7 +134,7 @@
                 showFieldError(dataCaricoInput, 'La data di carico è obbligatoria')
                 hasErrors = true
             } else {
-                const todayStr = new Date().toISOString().split('T')[0]
+                const todayStr = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') })()
                 if (dataCarico > todayStr) {
                     showFieldError(dataCaricoInput, 'La data non può essere nel futuro')
                     hasErrors = true
