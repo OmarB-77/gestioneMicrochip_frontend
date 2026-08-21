@@ -34,7 +34,15 @@
         </section>
     </main>
 
+    <footer class="app-footer">
+        <p>Versione <span id="version">—</span></p>
+    </footer>
+
     <script type="module" src="../js/app.js"></script>
+    <script type="module">
+        import { VERSION } from "../js/version.js"
+        document.getElementById("version").textContent = VERSION
+    </script>
     <script type="module">
         import { login, getCurrentUser } from '../js/auth.js'
         import { HOME_PAGE } from '../js/config.js'
