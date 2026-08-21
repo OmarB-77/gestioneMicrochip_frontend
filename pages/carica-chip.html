@@ -153,7 +153,8 @@
                 .insert({
                     numero_chip: numeroChip,
                     stato: 'disponibile',
-                    data_carico: dataCarico
+                    data_carico: dataCarico,
+                    caricato_da: ctx.user.id
                 })
 
             if (error) {

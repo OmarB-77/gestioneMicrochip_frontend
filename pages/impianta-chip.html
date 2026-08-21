@@ -445,7 +445,8 @@
                     data_nascita_gatto: dataNascita,
                     genere_gatto: genere,
                     associazione_id: associazioneId,
-                    data_impianto: dataImpianto
+                    data_impianto: dataImpianto,
+                    impiantato_da: ctx.user.id
                 })
                 .eq('id', selectedChip.id)
                 .eq('stato', 'disponibile')  // safety: only update if still available

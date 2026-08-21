@@ -231,7 +231,8 @@
                 .from('chips')
                 .update({
                     stato: 'registrato',
-                    data_registrazione_bdn: dataRegistrazione
+                    data_registrazione_bdn: dataRegistrazione,
+                    registrato_da: ctx.user.id
                 })
                 .eq('id', selectedCat.id)
                 .eq('stato', 'adottato')  // safety: only update if still adopted

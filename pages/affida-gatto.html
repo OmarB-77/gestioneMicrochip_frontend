@@ -665,7 +665,8 @@
                 adottante_scadenza_documento: adottanteScadenzaDoc || null,
                 numero_scheda: numeroScheda,
                 privacy_autorizzata: true,
-                data_adozione: dataAdozione
+                data_adozione: dataAdozione,
+                adottato_da: ctx.user.id
             }
 
             const { error } = await supabase
