@@ -33,6 +33,13 @@
                     <input type="date" id="data-carico" name="data_carico" required>
                     <span class="error-msg" id="data-carico-error"></span>
                 </div>
+                <div class="form-group">
+                    <label for="associazione">Associazione (opzionale)</label>
+                    <select id="associazione" name="associazione_id">
+                        <option value="">— Nessuna (visibile solo ad admin) —</option>
+                    </select>
+                    <span class="error-msg"></span>
+                </div>
                 <button type="submit" class="btn btn-primary btn-full">Salva</button>
             </form>
         </section>
@@ -60,6 +67,24 @@
         const today = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') })()
         dataCaricoInput.value = today
         dataCaricoInput.max = today
+
+        // Carica le associazioni per il campo opzionale
+        const associazioneSelect = document.getElementById('associazione')
+        {
+            const { data, error } = await supabase
+                .from('associazioni')
+                .select('id, nome')
+                .order('nome', { ascending: true })
+
+            if (!error && data) {
+                data.forEach(assoc => {
+                    const option = document.createElement('option')
+                    option.value = assoc.id
+                    option.textContent = assoc.nome
+                    associazioneSelect.appendChild(option)
+                })
+            }
+        }
 
         // Riferimenti elementi scanner
         const btnScan = document.getElementById('btn-scan')
@@ -154,6 +179,7 @@
                     numero_chip: numeroChip,
                     stato: 'disponibile',
                     data_carico: dataCarico,
+                    associazione_id: associazioneSelect.value || null,
                     caricato_da: ctx.user.id
                 })
 

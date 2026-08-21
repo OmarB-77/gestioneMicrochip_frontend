@@ -153,11 +153,18 @@
             chipListEmpty.hidden = true
             chipList.innerHTML = ''
 
-            const { data, error } = await supabase
+            let query = supabase
                 .from('chips')
                 .select('id, numero_chip, data_carico')
                 .eq('stato', 'disponibile')
                 .order('numero_chip', { ascending: true })
+
+            // Guest vede solo chip assegnati alla propria associazione
+            if (role === 'guest' && userAssociazioneId) {
+                query = query.eq('associazione_id', userAssociazioneId)
+            }
+
+            const { data, error } = await query
 
             chipListLoading.hidden = true
 
