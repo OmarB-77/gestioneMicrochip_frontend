@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Associazioni — Gestione Microchip</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dark.css" id="dark-theme-link" disabled>
+</head>
+<body>
+    <header class="app-header">
+        <a href="../index.html" class="btn-back" aria-label="Torna alla home">&larr; Home</a>
+        <h1 class="app-title">Gestione Associazioni</h1>
+    </header>
+
+    <main class="main-content">
+        <!-- Crea nuova associazione -->
+        <section class="form-container">
+            <h2 class="form-title">Crea nuova associazione</h2>
+            <form id="crea-assoc-form" novalidate>
+                <div class="form-group">
+                    <label for="assoc-nome">Nome associazione</label>
+                    <input type="text" id="assoc-nome" name="nome"
+                           required placeholder="Nome associazione"
+                           autocomplete="off">
+                    <span class="error-msg" id="assoc-nome-error"></span>
+                </div>
+                <button type="submit" id="btn-crea-assoc" class="btn btn-primary btn-full">
+                    Crea
+                </button>
+            </form>
+        </section>
+
+        <!-- Lista associazioni esistenti -->
+        <section class="form-container" style="margin-top: 16px;">
+            <h2 class="form-title">Lista associazioni esistenti</h2>
+            <div id="assoc-list" class="guest-list">
+                <p class="info-message" id="assoc-list-loading">Caricamento associazioni...</p>
+                <p class="info-message" id="assoc-list-empty" hidden>Nessuna associazione presente</p>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
+        import { protectPage } from '../js/router.js'
+        import { initDarkMode, showToast, showFieldError, clearAllErrors, scrollToFirstError } from '../js/ui-utils.js'
+        import { supabase } from '../js/supabase-client.js'
+
+        // Inizializza dark mode
+        initDarkMode()
+
+        // Guard admin: solo admin può accedere a questa pagina
+        const ctx = await protectPage(['admin'])
+        if (!ctx) {
+            throw new Error('Accesso negato')
+        }
+
+        // =====================================================================
+        // DOM References
+        // =====================================================================
+        const form = document.getElementById('crea-assoc-form')
+        const nomeInput = document.getElementById('assoc-nome')
+        const btnCrea = document.getElementById('btn-crea-assoc')
+        const assocListContainer = document.getElementById('assoc-list')
+        const assocListLoading = document.getElementById('assoc-list-loading')
+        const assocListEmpty = document.getElementById('assoc-list-empty')
+
+        // =====================================================================
+        // Utility: escape HTML
+        // =====================================================================
+        function escapeHtml(str) {
+            if (!str) return ''
+            const div = document.createElement('div')
+            div.textContent = str
+            return div.innerHTML
+        }
+
+        // =====================================================================
+        // Creazione associazione
+        // =====================================================================
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault()
+            clearAllErrors(form)
+
+            const nome = nomeInput.value.trim()
+
+            if (!nome) {
+                showFieldError(nomeInput, 'Il nome è obbligatorio')
+                scrollToFirstError(form)
+                return
+            }
+
+            btnCrea.disabled = true
+            btnCrea.textContent = 'Creazione in corso...'
+
+            const { error } = await supabase
+                .from('associazioni')
+                .insert({ nome })
+
+            btnCrea.disabled = false
+            btnCrea.textContent = 'Crea'
+
+            if (error) {
+                if (error.code === '23505') {
+                    showToast('Un\'associazione con questo nome esiste già', 'error')
+                } else {
+                    showToast('Errore durante la creazione. Riprova.', 'error')
+                }
+                return
+            }
+
+            showToast('Associazione creata con successo', 'success')
+            form.reset()
+            await loadAssocList()
+        })
+
+        // =====================================================================
+        // Caricamento lista associazioni
+        // =====================================================================
+        async function loadAssocList() {
+            assocListLoading.hidden = false
+            assocListEmpty.hidden = true
+
+            // Rimuovi item esistenti
+            const existingItems = assocListContainer.querySelectorAll('.guest-item')
+            existingItems.forEach(item => item.remove())
+
+            const { data, error } = await supabase
+                .from('associazioni')
+                .select('id, nome')
+                .order('nome', { ascending: true })
+
+            assocListLoading.hidden = true
+
+            if (error) {
+                showToast('Errore nel caricamento delle associazioni', 'error')
+                assocListEmpty.textContent = 'Errore nel caricamento'
+                assocListEmpty.hidden = false
+                return
+            }
+
+            if (!data || data.length === 0) {
+                assocListEmpty.hidden = false
+                return
+            }
+
+            data.forEach(assoc => {
+                const item = document.createElement('div')
+                item.className = 'guest-item'
+                item.innerHTML = `
+                    <input type="text" class="assoc-name-input" value="${escapeHtml(assoc.nome)}" readonly data-original="${escapeHtml(assoc.nome)}">
+                    <div class="assoc-actions">
+                        <button type="button" class="btn btn-secondary btn-sm btn-modifica" data-id="${assoc.id}">Modifica</button>
+                        <button type="button" class="btn btn-danger btn-sm btn-elimina" data-id="${assoc.id}" data-nome="${escapeHtml(assoc.nome)}">Elimina</button>
+                    </div>
+                `
+                assocListContainer.appendChild(item)
+            })
+
+            attachListListeners()
+        }
+
+        // =====================================================================
+        // Event listeners per modifica/elimina
+        // =====================================================================
+        function attachListListeners() {
+            const editButtons = assocListContainer.querySelectorAll('.btn-modifica')
+            const deleteButtons = assocListContainer.querySelectorAll('.btn-elimina')
+
+            editButtons.forEach(btn => {
+                btn.addEventListener('click', () => handleEditClick(btn))
+            })
+
+            deleteButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id
+                    const nome = btn.dataset.nome
+                    handleDelete(id, nome)
+                })
+            })
+        }
+
+        // =====================================================================
+        // Modifica associazione
+        // =====================================================================
+        function handleEditClick(btn) {
+            const item = btn.closest('.guest-item')
+            const input = item.querySelector('.assoc-name-input')
+            const assocId = btn.dataset.id
+
+            if (input.readOnly) {
+                // Entra in modalità modifica
+                input.readOnly = false
+                input.focus()
+                btn.textContent = 'Salva'
+                btn.classList.remove('btn-secondary')
+                btn.classList.add('btn-primary')
+
+                // Gestisci Escape per annullare
+                const handleKeydown = (e) => {
+                    if (e.key === 'Escape') {
+                        input.value = input.dataset.original
+                        exitEditMode(input, btn)
+                        input.removeEventListener('keydown', handleKeydown)
+                    }
+                }
+                input.addEventListener('keydown', handleKeydown)
+
+                // Gestisci blur (click fuori) per annullare
+                const handleBlur = (e) => {
+                    // Se il blur è causato dal click su "Salva", non annullare
+                    setTimeout(() => {
+                        if (input.readOnly) return
+                        // Controlla se il focus è andato al pulsante Salva
+                        if (document.activeElement === btn) return
+                        input.value = input.dataset.original
+                        exitEditMode(input, btn)
+                    }, 150)
+                }
+                input.addEventListener('blur', handleBlur, { once: true })
+            } else {
+                // Salva
+                handleSave(assocId, input, btn)
+            }
+        }
+
+        function exitEditMode(input, btn) {
+            input.readOnly = true
+            btn.textContent = 'Modifica'
+            btn.classList.remove('btn-primary')
+            btn.classList.add('btn-secondary')
+        }
+
+        async function handleSave(assocId, input, btn) {
+            const newNome = input.value.trim()
+
+            if (!newNome) {
+                showToast('Il nome non può essere vuoto', 'error')
+                input.focus()
+                return
+            }
+
+            if (newNome === input.dataset.original) {
+                exitEditMode(input, btn)
+                return
+            }
+
+            btn.disabled = true
+
+            const { error } = await supabase
+                .from('associazioni')
+                .update({ nome: newNome })
+                .eq('id', assocId)
+
+            btn.disabled = false
+
+            if (error) {
+                if (error.code === '23505') {
+                    showToast('Un\'associazione con questo nome esiste già', 'error')
+                } else {
+                    showToast('Errore durante l\'aggiornamento. Riprova.', 'error')
+                }
+                return
+            }
+
+            showToast('Associazione aggiornata', 'success')
+            await loadAssocList()
+        }
+
+        // =====================================================================
+        // Eliminazione associazione
+        // =====================================================================
+        async function handleDelete(assocId, nome) {
+            const confirmed = confirm(`Eliminare l'associazione '${nome}'? I chip associati perderanno il riferimento.`)
+            if (!confirmed) return
+
+            const { error } = await supabase
+                .from('associazioni')
+                .delete()
+                .eq('id', assocId)
+
+            if (error) {
+                if (error.code === '23503') {
+                    showToast('Impossibile eliminare: ci sono chip o utenti associati a questa associazione', 'error')
+                } else {
+                    showToast('Errore durante l\'eliminazione. Riprova.', 'error')
+                }
+                return
+            }
+
+            showToast('Associazione eliminata', 'success')
+            await loadAssocList()
+        }
+
+        // =====================================================================
+        // Init: carica lista
+        // =====================================================================
+        await loadAssocList()
+    </script>
+</body>
+</html>

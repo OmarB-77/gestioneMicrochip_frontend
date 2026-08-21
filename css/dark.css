@@ -163,6 +163,17 @@ body.dark .toast.toast-error {
     background-color: #b71c1c;
 }
 
+/* ---------- Association List ---------- */
+body.dark .assoc-name-input {
+    color: #e0e0e0;
+}
+
+body.dark .assoc-name-input:not([readonly]) {
+    background-color: #2c2c2c;
+    border-color: #64b5f6;
+    color: #e0e0e0;
+}
+
 /* ---------- Offline Banner ---------- */
 body.dark .offline-banner {
     background-color: #e65100;

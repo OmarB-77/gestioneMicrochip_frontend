@@ -600,6 +600,34 @@ body.dark .spinner {
     flex-shrink: 0;
 }
 
+/* ---------- Button Sizes ---------- */
+.btn-sm {
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 0.8125rem;
+}
+
+/* ---------- Association List ---------- */
+.assoc-name-input {
+    flex: 1;
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: 0.875rem;
+    padding: 8px;
+    border-radius: 6px;
+    color: #1a1a1a;
+}
+
+.assoc-name-input:not([readonly]) {
+    border-color: #2196F3;
+    background-color: #fff;
+}
+
+.assoc-actions {
+    display: flex;
+    gap: 8px;
+}
+
 /* ---------- Responsive (tablet+) ---------- */
 @media (min-width: 480px) {
     .nav-grid {
