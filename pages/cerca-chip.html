@@ -22,6 +22,11 @@
                        placeholder="Inserisci numero chip..." autocomplete="off">
             </div>
 
+            <button type="button" id="btn-scan" class="btn btn-secondary btn-full">
+                📷 Scansiona barcode
+            </button>
+            <div id="scanner-container" class="scanner-area" hidden></div>
+
             <!-- Results list -->
             <div class="search-results" id="search-results" role="listbox" aria-label="Risultati ricerca chip">
                 <!-- Populated dynamically -->
@@ -205,6 +210,7 @@
         import { initDarkMode, showToast, showFieldError, clearAllErrors, scrollToFirstError } from '../js/ui-utils.js'
         import { validateCodiceFiscale } from '../js/validation.js'
         import { supabase } from '../js/supabase-client.js'
+        import { startScan, stopScan } from '../js/scanner.js'
 
         // Inizializza dark mode
         initDarkMode()
@@ -226,6 +232,8 @@
         const chipDetail = document.getElementById('chip-detail')
         const form = document.getElementById('modifica-chip-form')
         const btnBackToList = document.getElementById('btn-back-to-list')
+        const btnScan = document.getElementById('btn-scan')
+        const scannerContainer = document.getElementById('scanner-container')
 
         // Detail fields
         const detailNumeroChip = document.getElementById('detail-numero-chip')
@@ -248,6 +256,46 @@
         const PAGE_SIZE = 20
         let currentOffset = 0
         let isFiltering = false
+        let scannerActive = false
+
+        // =====================================================================
+        // Scanner
+        // =====================================================================
+        btnScan.addEventListener('click', async () => {
+            if (scannerActive) {
+                await stopScan()
+                scannerContainer.hidden = true
+                btnScan.textContent = '📷 Scansiona barcode'
+                scannerActive = false
+            } else {
+                scannerContainer.hidden = false
+                btnScan.textContent = '✕ Chiudi scanner'
+                scannerActive = true
+
+                await startScan(
+                    'scanner-container',
+                    (decodedText) => {
+                        scannerContainer.hidden = true
+                        btnScan.textContent = '📷 Scansiona barcode'
+                        scannerActive = false
+                        // Put the scanned text in the search field and trigger search
+                        searchInput.value = decodedText
+                        searchInput.dispatchEvent(new Event('input'))
+                        showToast('Codice scansionato', 'success')
+                    },
+                    (errorType) => {
+                        scannerContainer.hidden = true
+                        btnScan.textContent = '📷 Scansiona barcode'
+                        scannerActive = false
+                        if (errorType === 'TIMEOUT') {
+                            showToast('Scansione non riuscita. Riprova o digita manualmente.', 'error')
+                        } else {
+                            showToast('Impossibile accedere alla fotocamera.', 'error')
+                        }
+                    }
+                )
+            }
+        })
 
         // State index for section visibility
         const STATO_INDEX = { disponibile: 0, impiantato: 1, adottato: 2, registrato: 3 }
