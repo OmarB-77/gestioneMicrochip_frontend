@@ -566,10 +566,8 @@
                 showFieldError(dataAdozioneEl, 'La data di adozione è obbligatoria')
                 hasErrors = true
             } else {
-                const adozioneDate = new Date(dataAdozione)
-                const todayDate = new Date()
-                todayDate.setHours(0, 0, 0, 0)
-                if (adozioneDate > todayDate) {
+                const todayStr = new Date().toISOString().split('T')[0]
+                if (dataAdozione > todayStr) {
                     showFieldError(dataAdozioneEl, 'La data non può essere nel futuro')
                     hasErrors = true
                 }

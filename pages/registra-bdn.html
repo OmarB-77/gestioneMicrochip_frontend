@@ -204,20 +204,17 @@
                 showFieldError(dataRegistrazioneInput, 'La data di registrazione è obbligatoria')
                 hasErrors = true
             } else {
-                const regDate = new Date(dataRegistrazione)
-                const todayDate = new Date()
-                todayDate.setHours(0, 0, 0, 0)
+                const todayStr = new Date().toISOString().split('T')[0]
 
                 // Not in the future
-                if (regDate > todayDate) {
+                if (dataRegistrazione > todayStr) {
                     showFieldError(dataRegistrazioneInput, 'La data non può essere nel futuro')
                     hasErrors = true
                 }
 
                 // Not before data_impianto
                 if (!hasErrors && selectedCat.data_impianto) {
-                    const impiantoDate = new Date(selectedCat.data_impianto)
-                    if (regDate < impiantoDate) {
+                    if (dataRegistrazione < selectedCat.data_impianto) {
                         showFieldError(dataRegistrazioneInput, 'La data non può essere anteriore alla data di impianto')
                         hasErrors = true
                     }

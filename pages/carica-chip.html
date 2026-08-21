@@ -134,10 +134,8 @@
                 showFieldError(dataCaricoInput, 'La data di carico è obbligatoria')
                 hasErrors = true
             } else {
-                const selectedDate = new Date(dataCarico)
-                const todayDate = new Date()
-                todayDate.setHours(0, 0, 0, 0)
-                if (selectedDate > todayDate) {
+                const todayStr = new Date().toISOString().split('T')[0]
+                if (dataCarico > todayStr) {
                     showFieldError(dataCaricoInput, 'La data non può essere nel futuro')
                     hasErrors = true
                 }

@@ -525,9 +525,8 @@
             // ========== Validate and collect: data_carico ==========
             const dataCarico = detailDataCarico.value
             if (dataCarico) {
-                const todayDate = new Date()
-                todayDate.setHours(0, 0, 0, 0)
-                if (new Date(dataCarico) > todayDate) {
+                const todayStr = new Date().toISOString().split('T')[0]
+                if (dataCarico > todayStr) {
                     showFieldError(detailDataCarico, 'La data non può essere nel futuro')
                     hasErrors = true
                 } else {
@@ -584,9 +583,8 @@
                     showFieldError(dataNascitaEl, 'La data di nascita è obbligatoria')
                     hasErrors = true
                 } else {
-                    const todayDate = new Date()
-                    todayDate.setHours(0, 0, 0, 0)
-                    if (new Date(dataNascitaGatto) > todayDate) {
+                    const todayStr = new Date().toISOString().split('T')[0]
+                    if (dataNascitaGatto > todayStr) {
                         showFieldError(dataNascitaEl, 'La data non può essere nel futuro')
                         hasErrors = true
                     } else {
@@ -609,9 +607,8 @@
                     showFieldError(dataImpiantoEl, 'La data di impianto è obbligatoria')
                     hasErrors = true
                 } else {
-                    const todayDate = new Date()
-                    todayDate.setHours(0, 0, 0, 0)
-                    if (new Date(dataImpianto) > todayDate) {
+                    const todayStr = new Date().toISOString().split('T')[0]
+                    if (dataImpianto > todayStr) {
                         showFieldError(dataImpiantoEl, 'La data non può essere nel futuro')
                         hasErrors = true
                     } else {
@@ -731,9 +728,8 @@
                     showFieldError(dataAdozioneEl, 'La data di adozione è obbligatoria')
                     hasErrors = true
                 } else {
-                    const todayDate = new Date()
-                    todayDate.setHours(0, 0, 0, 0)
-                    if (new Date(dataAdozione) > todayDate) {
+                    const todayStr = new Date().toISOString().split('T')[0]
+                    if (dataAdozione > todayStr) {
                         showFieldError(dataAdozioneEl, 'La data non può essere nel futuro')
                         hasErrors = true
                     } else {
@@ -751,9 +747,8 @@
                     showFieldError(dataRegBdnEl, 'La data di registrazione BDN è obbligatoria')
                     hasErrors = true
                 } else {
-                    const todayDate = new Date()
-                    todayDate.setHours(0, 0, 0, 0)
-                    if (new Date(dataRegBdn) > todayDate) {
+                    const todayStr = new Date().toISOString().split('T')[0]
+                    if (dataRegBdn > todayStr) {
                         showFieldError(dataRegBdnEl, 'La data non può essere nel futuro')
                         hasErrors = true
                     } else {
@@ -761,7 +756,7 @@
                         const dataImpianto = document.getElementById('detail-data-impianto')
                             ? document.getElementById('detail-data-impianto').value
                             : null
-                        if (dataImpianto && new Date(dataRegBdn) < new Date(dataImpianto)) {
+                        if (dataImpianto && dataRegBdn < dataImpianto) {
                             showFieldError(dataRegBdnEl, 'La data non può essere anteriore alla data di impianto')
                             hasErrors = true
                         } else {
