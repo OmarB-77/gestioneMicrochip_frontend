@@ -178,3 +178,16 @@ body.dark .assoc-name-input:not([readonly]) {
 body.dark .offline-banner {
     background-color: #e65100;
 }
+
+/* ---------- BDN Summary ---------- */
+body.dark .summary-row {
+    border-bottom-color: #333;
+}
+
+body.dark .summary-label {
+    color: #999;
+}
+
+body.dark .summary-value {
+    color: #e0e0e0;
+}

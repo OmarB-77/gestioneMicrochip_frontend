@@ -30,14 +30,53 @@
 
             <!-- Form registrazione BDN (hidden until a cat is selected) -->
             <form id="registra-bdn-form" novalidate hidden>
-                <h2 class="form-section-title">Gatto selezionato</h2>
-                <div class="form-group">
-                    <label for="chip-selezionato">Numero chip</label>
-                    <input type="text" id="chip-selezionato" readonly>
-                </div>
-                <div class="form-group">
-                    <label for="nome-gatto-selezionato">Nome gatto</label>
-                    <input type="text" id="nome-gatto-selezionato" readonly>
+                <h2 class="form-section-title">Riepilogo dati per BDN</h2>
+
+                <div class="bdn-summary">
+                    <div class="summary-row">
+                        <span class="summary-label">Nome gatto</span>
+                        <span class="summary-value" id="sum-nome-gatto"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Numero chip</span>
+                        <span class="summary-value" id="sum-numero-chip"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Genere</span>
+                        <span class="summary-value" id="sum-genere"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Data di nascita</span>
+                        <span class="summary-value" id="sum-data-nascita"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Tipologia pelo</span>
+                        <span class="summary-value" id="sum-tipologia-pelo"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Colore mantello</span>
+                        <span class="summary-value" id="sum-colore-mantello"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Cognome affidatario</span>
+                        <span class="summary-value" id="sum-cognome"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Nome affidatario</span>
+                        <span class="summary-value" id="sum-nome"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Codice fiscale</span>
+                        <span class="summary-value" id="sum-cf"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Indirizzo</span>
+                        <span class="summary-value" id="sum-indirizzo"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Numero scheda</span>
+                        <span class="summary-value" id="sum-scheda"></span>
+                    </div>
                 </div>
 
                 <h2 class="form-section-title">Registrazione BDN</h2>
@@ -75,8 +114,6 @@
         const gattoListLoading = document.getElementById('gatto-list-loading')
         const gattoSelectError = document.getElementById('gatto-select-error')
         const form = document.getElementById('registra-bdn-form')
-        const chipSelezionato = document.getElementById('chip-selezionato')
-        const nomeGattoSelezionato = document.getElementById('nome-gatto-selezionato')
         const dataRegistrazioneInput = document.getElementById('data-registrazione')
 
         // =====================================================================
@@ -100,7 +137,7 @@
 
             const { data, error } = await supabase
                 .from('chips')
-                .select('id, numero_chip, nome_gatto, data_impianto')
+                .select('id, numero_chip, nome_gatto, nome_gatto_adozione, genere_gatto, data_nascita_gatto, tipologia_pelo, colore_mantello, adottante_cognome, adottante_nome, adottante_cf, adottante_residenza, numero_scheda, data_impianto')
                 .eq('stato', 'adottato')
                 .order('nome_gatto', { ascending: true })
 
@@ -160,24 +197,40 @@
         // =====================================================================
         // Select a cat → show the registration form
         // =====================================================================
+        function formatDateDisplay(dateStr) {
+            if (!dateStr) return ''
+            const [y, m, d] = dateStr.split('-')
+            return `${d}/${m}/${y}`
+        }
+
         function selectCat(cat) {
             selectedCat = cat
-            chipSelezionato.value = cat.numero_chip
-            nomeGattoSelezionato.value = cat.nome_gatto || ''
             gattoSelectError.textContent = ''
 
-            // Reset date to today
+            // Populate summary
+            const nomeGatto = cat.nome_gatto_adozione || cat.nome_gatto || '—'
+            document.getElementById('sum-nome-gatto').textContent = nomeGatto
+            document.getElementById('sum-numero-chip').textContent = cat.numero_chip || '—'
+            document.getElementById('sum-genere').textContent = cat.genere_gatto || '—'
+            document.getElementById('sum-data-nascita').textContent = formatDateDisplay(cat.data_nascita_gatto) || '—'
+            document.getElementById('sum-tipologia-pelo').textContent = cat.tipologia_pelo || '—'
+            document.getElementById('sum-colore-mantello').textContent = cat.colore_mantello || '—'
+            document.getElementById('sum-cognome').textContent = cat.adottante_cognome || '—'
+            document.getElementById('sum-nome').textContent = cat.adottante_nome || '—'
+            document.getElementById('sum-cf').textContent = cat.adottante_cf || '—'
+            document.getElementById('sum-indirizzo').textContent = cat.adottante_residenza || '—'
+            document.getElementById('sum-scheda').textContent = cat.numero_scheda || '—'
+
+            // Reset date
             dataRegistrazioneInput.value = today
             dataRegistrazioneInput.max = today
-
-            // Set min date to data_impianto if available
             if (cat.data_impianto) {
                 dataRegistrazioneInput.min = cat.data_impianto
             } else {
                 dataRegistrazioneInput.removeAttribute('min')
             }
 
-            // Show the form
+            // Show form
             form.hidden = false
             form.scrollIntoView({ behavior: 'smooth', block: 'start' })
         }

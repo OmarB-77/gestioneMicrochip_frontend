@@ -628,6 +628,36 @@ body.dark .spinner {
     gap: 8px;
 }
 
+/* ---------- BDN Summary ---------- */
+.bdn-summary {
+    margin-bottom: 16px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    font-size: 0.8125rem;
+    color: #666;
+    flex-shrink: 0;
+}
+
+.summary-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: right;
+    word-break: break-word;
+}
+
 /* ---------- Responsive (tablet+) ---------- */
 @media (min-width: 480px) {
     .nav-grid {
