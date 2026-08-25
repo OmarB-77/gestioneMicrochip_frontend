@@ -16,7 +16,7 @@
     <main class="main-content">
         <section class="form-container">
             <!-- Lista gatti adottati -->
-            <h2 class="form-title">Seleziona gatto adottato</h2>
+            <h2 class="form-title" id="list-title">Seleziona gatto adottato</h2>
 
             <div id="gatto-list-container">
                 <div class="search-results" id="gatto-list" role="listbox" aria-label="Lista gatti adottati">
@@ -30,6 +30,10 @@
 
             <!-- Form registrazione BDN (hidden until a cat is selected) -->
             <form id="registra-bdn-form" novalidate hidden>
+                <button type="button" id="btn-cambia-gatto" class="btn btn-secondary btn-full" style="margin-bottom:16px;">
+                    ← Cambia gatto
+                </button>
+
                 <h2 class="form-section-title">Riepilogo dati per BDN</h2>
 
                 <div class="bdn-summary">
@@ -112,8 +116,11 @@
         const gattoList = document.getElementById('gatto-list')
         const gattoListEmpty = document.getElementById('gatto-list-empty')
         const gattoListLoading = document.getElementById('gatto-list-loading')
+        const gattoListContainer = document.getElementById('gatto-list-container')
         const gattoSelectError = document.getElementById('gatto-select-error')
+        const listTitle = document.getElementById('list-title')
         const form = document.getElementById('registra-bdn-form')
+        const btnCambiaGatto = document.getElementById('btn-cambia-gatto')
         const dataRegistrazioneInput = document.getElementById('data-registrazione')
 
         // =====================================================================
@@ -162,6 +169,17 @@
         await loadCats()
 
         // =====================================================================
+        // "Cambia gatto" button handler
+        // =====================================================================
+        btnCambiaGatto.addEventListener('click', () => {
+            // Hide form, show list
+            form.hidden = true
+            listTitle.hidden = false
+            gattoListContainer.style.display = ''
+            selectedCat = null
+        })
+
+        // =====================================================================
         // Render cat list
         // =====================================================================
         function renderCatList(cats) {
@@ -206,6 +224,11 @@
         function selectCat(cat) {
             selectedCat = cat
             gattoSelectError.textContent = ''
+
+            // Hide list section
+            listTitle.hidden = true
+            gattoListContainer.style.display = 'none'
+            gattoSelectError.hidden = true
 
             // Populate summary
             const nomeGatto = cat.nome_gatto_adozione || cat.nome_gatto || '—'
@@ -306,6 +329,8 @@
             selectedCat = null
             form.reset()
             form.hidden = true
+            listTitle.hidden = false
+            gattoListContainer.style.display = ''
             dataRegistrazioneInput.value = today
             dataRegistrazioneInput.max = today
 
