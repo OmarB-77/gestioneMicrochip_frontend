@@ -105,6 +105,17 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="detail-tipologia-pelo">Tipologia pelo</label>
+                            <select id="detail-tipologia-pelo" name="tipologia_pelo">
+                                <option value="">— Seleziona —</option>
+                                <option value="corto">Corto</option>
+                                <option value="mezzo pelo">Mezzo pelo</option>
+                                <option value="lungo">Lungo</option>
+                            </select>
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
                             <label for="detail-data-impianto">Data di impianto</label>
                             <input type="date" id="detail-data-impianto" name="data_impianto">
                             <span class="error-msg"></span>
@@ -556,6 +567,7 @@
                 document.getElementById('detail-colore-mantello').value = chip.colore_mantello || ''
                 document.getElementById('detail-data-nascita-gatto').value = chip.data_nascita_gatto || ''
                 document.getElementById('detail-genere-gatto').value = chip.genere_gatto || ''
+                document.getElementById('detail-tipologia-pelo').value = chip.tipologia_pelo || ''
                 document.getElementById('detail-data-impianto').value = chip.data_impianto || ''
 
                 // Set max dates
@@ -698,6 +710,9 @@
                 } else {
                     updateData.genere_gatto = genereGatto
                 }
+
+                // Tipologia pelo (optional in edit)
+                updateData.tipologia_pelo = document.getElementById('detail-tipologia-pelo').value || null
 
                 // Data impianto: required, not future
                 const dataImpiantoEl = document.getElementById('detail-data-impianto')

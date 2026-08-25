@@ -79,6 +79,17 @@
                     <span class="error-msg"></span>
                 </div>
 
+                <div class="form-group">
+                    <label for="tipologia-pelo">Tipologia pelo</label>
+                    <select id="tipologia-pelo" name="tipologia_pelo" required>
+                        <option value="">— Seleziona —</option>
+                        <option value="corto">Corto</option>
+                        <option value="mezzo pelo">Mezzo pelo</option>
+                        <option value="lungo">Lungo</option>
+                    </select>
+                    <span class="error-msg"></span>
+                </div>
+
                 <div class="form-group" id="associazione-group">
                     <label for="associazione">Associazione</label>
                     <!-- Admin: select; Guest: readonly input (swapped dynamically) -->
@@ -418,6 +429,14 @@
                 hasErrors = true
             }
 
+            // Tipologia pelo: required
+            const tipologiaPelo = document.getElementById('tipologia-pelo').value
+            const tipologiaPeloEl = document.getElementById('tipologia-pelo')
+            if (!tipologiaPelo) {
+                showFieldError(tipologiaPeloEl, 'Seleziona la tipologia di pelo')
+                hasErrors = true
+            }
+
             // Associazione: required
             if (!associazioneId) {
                 showFieldError(assocEl, 'Seleziona un\'associazione')
@@ -451,6 +470,7 @@
                     colore_mantello: coloreMantello,
                     data_nascita_gatto: dataNascita,
                     genere_gatto: genere,
+                    tipologia_pelo: tipologiaPelo,
                     associazione_id: associazioneId,
                     data_impianto: dataImpianto,
                     impiantato_da: ctx.user.id

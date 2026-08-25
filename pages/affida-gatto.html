@@ -58,6 +58,17 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="tipologia-pelo">Tipologia pelo</label>
+                    <select id="tipologia-pelo" name="tipologia_pelo">
+                        <option value="">— Seleziona —</option>
+                        <option value="corto">Corto</option>
+                        <option value="mezzo pelo">Mezzo pelo</option>
+                        <option value="lungo">Lungo</option>
+                    </select>
+                    <span class="error-msg"></span>
+                </div>
+
+                <div class="form-group">
                     <label for="data-adozione">Data di adozione</label>
                     <input type="date" id="data-adozione" name="data_adozione" required>
                     <span class="error-msg"></span>
@@ -213,7 +224,7 @@
 
             let query = supabase
                 .from('chips')
-                .select('id, numero_chip, nome_gatto, associazione_id, data_impianto')
+                .select('id, numero_chip, nome_gatto, tipologia_pelo, associazione_id, data_impianto')
                 .eq('stato', 'impiantato')
                 .order('nome_gatto', { ascending: true })
 
@@ -313,6 +324,9 @@
             // Pre-fill cat name for adoption (editable)
             const nomeGattoInput = document.getElementById('nome-gatto-adozione')
             nomeGattoInput.value = cat.nome_gatto || ''
+
+            // Pre-fill tipologia pelo from existing data
+            document.getElementById('tipologia-pelo').value = cat.tipologia_pelo || ''
 
             // Show the form
             form.hidden = false
@@ -655,6 +669,7 @@
             const updateData = {
                 stato: 'adottato',
                 nome_gatto_adozione: nomeGattoAdozione || null,
+                tipologia_pelo: document.getElementById('tipologia-pelo').value || null,
                 adottante_nome: adottanteNome,
                 adottante_cognome: adottanteCognome,
                 adottante_cf: adottanteCf,
