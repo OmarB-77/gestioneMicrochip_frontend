@@ -166,7 +166,7 @@
 
             let query = supabase
                 .from('chips')
-                .select('id, numero_chip, data_carico')
+                .select('id, numero_chip, data_carico, associazione_id')
                 .eq('stato', 'disponibile')
                 .order('numero_chip', { ascending: true })
 
@@ -307,6 +307,12 @@
             selectedChip = chip
             chipSelezionato.value = chip.numero_chip
             chipSelectError.textContent = ''
+
+            // Pre-select association if chip has one assigned
+            if (chip.associazione_id && role === "admin") {
+                const assocSelect = document.getElementById("associazione")
+                if (assocSelect) assocSelect.value = chip.associazione_id
+            }
 
             // Show the form
             form.hidden = false
