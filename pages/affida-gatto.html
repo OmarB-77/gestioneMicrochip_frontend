@@ -127,12 +127,6 @@
 
                     <button type="button" id="btn-extract" class="btn btn-primary btn-full">🔍 Estrai dati dai documenti</button>
                     <p class="info-message" id="extract-status" hidden></p>
-                    <div id="extracted-info" class="form-group" hidden>
-                        <div style="background:#f0f9f4;border:1px solid #b8e6cc;border-radius:8px;padding:10px;margin-top:8px;">
-                            <span style="font-size:0.85rem;color:#555;">Luogo di nascita:</span>
-                            <strong id="extracted-luogo" style="margin-left:6px;"></strong>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Photo source popup (action sheet) -->
@@ -169,6 +163,13 @@
                 <div class="form-group">
                     <label for="adottante-data-nascita">Data di nascita</label>
                     <input type="date" id="adottante-data-nascita" name="adottante_data_nascita" required>
+                    <span class="error-msg"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="adottante-luogo-nascita">Luogo di nascita</label>
+                    <input type="text" id="adottante-luogo-nascita" name="adottante_luogo_nascita"
+                           placeholder="Comune di nascita">
                     <span class="error-msg"></span>
                 </div>
 
@@ -249,8 +250,6 @@
         const docInputs = document.getElementById('doc-inputs')
         const btnExtract = document.getElementById('btn-extract')
         const extractStatus = document.getElementById('extract-status')
-        const extractedInfo = document.getElementById('extracted-info')
-        const extractedLuogo = document.getElementById('extracted-luogo')
 
         // Popup elements
         const photoPopup = document.getElementById('photo-popup')
@@ -529,14 +528,6 @@
                 // Fill form fields with extracted data
                 fillFieldsFromExtraction(fields)
 
-                // Show luogoNascita if available
-                if (fields.luogoNascita) {
-                    extractedLuogo.textContent = fields.luogoNascita
-                    extractedInfo.hidden = false
-                } else {
-                    extractedInfo.hidden = true
-                }
-
                 // Determine success level
                 const filledCount = Object.values(fields).filter(v => v !== null).length
                 if (filledCount === 0) {
@@ -590,6 +581,9 @@
                 if (dobDate) {
                     document.getElementById('adottante-data-nascita').value = dobDate
                 }
+            }
+            if (fields.luogoNascita) {
+                document.getElementById('adottante-luogo-nascita').value = fields.luogoNascita
             }
             if (fields.indirizzo) {
                 document.getElementById('adottante-residenza').value = fields.indirizzo
@@ -665,6 +659,7 @@
             const adottanteTelefono = document.getElementById('adottante-telefono').value.trim()
             const adottanteDocumento = document.getElementById('adottante-documento').value.trim()
             const adottanteScadenzaDoc = document.getElementById('adottante-scadenza-doc').value
+            const adottanteLuogoNascita = document.getElementById('adottante-luogo-nascita').value.trim()
             const numeroScheda = document.getElementById('numero-scheda').value.trim()
             const privacyCheckbox = document.getElementById('privacy')
             const privacyChecked = privacyCheckbox.checked
@@ -772,6 +767,7 @@
                 adottante_cognome: adottanteCognome,
                 adottante_cf: adottanteCf,
                 adottante_data_nascita: adottanteDataNascita,
+                adottante_luogo_nascita: adottanteLuogoNascita || null,
                 adottante_residenza: adottanteResidenza,
                 adottante_telefono: adottanteTelefono,
                 adottante_numero_documento: adottanteDocumento || null,
@@ -806,7 +802,6 @@
             docInputs.hidden = true
             btnLeggiCie.textContent = '📄 Leggi documenti d\'identità'
             extractStatus.hidden = true
-            extractedInfo.hidden = true
 
             await loadCats()
         })

@@ -158,6 +158,12 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="detail-adottante-luogo-nascita">Luogo di nascita</label>
+                            <input type="text" id="detail-adottante-luogo-nascita" name="adottante_luogo_nascita">
+                            <span class="error-msg"></span>
+                        </div>
+
+                        <div class="form-group">
                             <label for="detail-adottante-residenza">Residenza</label>
                             <input type="text" id="detail-adottante-residenza" name="adottante_residenza" maxlength="200">
                             <span class="error-msg"></span>
@@ -582,6 +588,7 @@
                 document.getElementById('detail-adottante-cognome').value = chip.adottante_cognome || ''
                 document.getElementById('detail-adottante-cf').value = chip.adottante_cf || ''
                 document.getElementById('detail-adottante-data-nascita').value = chip.adottante_data_nascita || ''
+                document.getElementById('detail-adottante-luogo-nascita').value = chip.adottante_luogo_nascita || ''
                 document.getElementById('detail-adottante-residenza').value = chip.adottante_residenza || ''
                 document.getElementById('detail-adottante-telefono').value = chip.adottante_telefono || ''
                 document.getElementById('detail-adottante-documento').value = chip.adottante_numero_documento || ''
@@ -794,6 +801,9 @@
                 } else {
                     updateData.adottante_data_nascita = adottanteDataNascita
                 }
+
+                // Luogo di nascita (optional)
+                updateData.adottante_luogo_nascita = document.getElementById('detail-adottante-luogo-nascita').value.trim() || null
 
                 // Residenza: required, max 200
                 const residenzaEl = document.getElementById('detail-adottante-residenza')
