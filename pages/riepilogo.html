@@ -156,12 +156,13 @@
             if (chipsError) throw chipsError
 
             const labels = {
+                disponibile: "Disponibile in magazzino",
                 impiantato: 'Impiantato',
                 adottato: 'Adottato',
                 registrato: 'Registrato in BDN'
             }
 
-            const counts = { impiantato: 0, adottato: 0, registrato: 0 }
+            const counts = { disponibile: 0, impiantato: 0, adottato: 0, registrato: 0 }
 
             for (const chip of chips) {
                 if (counts.hasOwnProperty(chip.stato)) {
