@@ -84,22 +84,47 @@
                 <!-- Document photo inputs (hidden until user taps button) -->
                 <div id="doc-inputs" hidden>
                     <p class="info-message">Fotografa i documenti disponibili per precompilare i campi automaticamente.</p>
-                    <div class="form-group">
-                        <label for="cie-retro">📋 Retro carta d'identità (lato codice a barre + MRZ)</label>
-                        <input type="file" id="cie-retro" accept="image/*">
+
+                    <div class="form-group doc-input-group">
+                        <label>📋 Retro carta d'identità (lato codice a barre + MRZ)</label>
+                        <button type="button" class="btn btn-secondary btn-full doc-pick-btn" data-doc="cie-retro">
+                            Seleziona immagine...
+                        </button>
+                        <span class="doc-filename" id="cie-retro-filename"></span>
+                        <input type="file" id="cie-retro-camera" accept="image/*" capture="environment" hidden>
+                        <input type="file" id="cie-retro-gallery" accept="image/*" hidden>
                     </div>
-                    <div class="form-group">
-                        <label for="cie-fronte">📋 Fronte carta d'identità (lato foto)</label>
-                        <input type="file" id="cie-fronte" accept="image/*">
+
+                    <div class="form-group doc-input-group">
+                        <label>📋 Fronte carta d'identità (lato foto)</label>
+                        <button type="button" class="btn btn-secondary btn-full doc-pick-btn" data-doc="cie-fronte">
+                            Seleziona immagine...
+                        </button>
+                        <span class="doc-filename" id="cie-fronte-filename"></span>
+                        <input type="file" id="cie-fronte-camera" accept="image/*" capture="environment" hidden>
+                        <input type="file" id="cie-fronte-gallery" accept="image/*" hidden>
                     </div>
-                    <div class="form-group">
-                        <label for="ts-fronte">💚 Fronte tessera sanitaria (lato dati)</label>
-                        <input type="file" id="ts-fronte" accept="image/*">
+
+                    <div class="form-group doc-input-group">
+                        <label>💚 Fronte tessera sanitaria (lato dati)</label>
+                        <button type="button" class="btn btn-secondary btn-full doc-pick-btn" data-doc="ts-fronte">
+                            Seleziona immagine...
+                        </button>
+                        <span class="doc-filename" id="ts-fronte-filename"></span>
+                        <input type="file" id="ts-fronte-camera" accept="image/*" capture="environment" hidden>
+                        <input type="file" id="ts-fronte-gallery" accept="image/*" hidden>
                     </div>
-                    <div class="form-group">
-                        <label for="ts-retro">💚 Retro tessera sanitaria (lato codice a barre)</label>
-                        <input type="file" id="ts-retro" accept="image/*">
+
+                    <div class="form-group doc-input-group">
+                        <label>💚 Retro tessera sanitaria (lato codice a barre)</label>
+                        <button type="button" class="btn btn-secondary btn-full doc-pick-btn" data-doc="ts-retro">
+                            Seleziona immagine...
+                        </button>
+                        <span class="doc-filename" id="ts-retro-filename"></span>
+                        <input type="file" id="ts-retro-camera" accept="image/*" capture="environment" hidden>
+                        <input type="file" id="ts-retro-gallery" accept="image/*" hidden>
                     </div>
+
                     <button type="button" id="btn-extract" class="btn btn-primary btn-full">🔍 Estrai dati dai documenti</button>
                     <p class="info-message" id="extract-status" hidden></p>
                     <div id="extracted-info" class="form-group" hidden>
@@ -107,6 +132,16 @@
                             <span style="font-size:0.85rem;color:#555;">Luogo di nascita:</span>
                             <strong id="extracted-luogo" style="margin-left:6px;"></strong>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Photo source popup (action sheet) -->
+                <div id="photo-popup" class="photo-popup" hidden>
+                    <div class="photo-popup-backdrop"></div>
+                    <div class="photo-popup-menu">
+                        <button type="button" class="photo-popup-option" id="popup-camera">📷 Scatta foto</button>
+                        <button type="button" class="photo-popup-option" id="popup-gallery">📁 Scegli da galleria</button>
+                        <button type="button" class="photo-popup-option photo-popup-cancel">Annulla</button>
                     </div>
                 </div>
 
@@ -212,14 +247,21 @@
         const chipSelezionato = document.getElementById('chip-selezionato')
         const btnLeggiCie = document.getElementById('btn-leggi-cie')
         const docInputs = document.getElementById('doc-inputs')
-        const cieRetroInput = document.getElementById('cie-retro')
-        const cieFronteInput = document.getElementById('cie-fronte')
-        const tsFronteInput = document.getElementById('ts-fronte')
-        const tsRetroInput = document.getElementById('ts-retro')
         const btnExtract = document.getElementById('btn-extract')
         const extractStatus = document.getElementById('extract-status')
         const extractedInfo = document.getElementById('extracted-info')
         const extractedLuogo = document.getElementById('extracted-luogo')
+
+        // Popup elements
+        const photoPopup = document.getElementById('photo-popup')
+        const popupCamera = document.getElementById('popup-camera')
+        const popupGallery = document.getElementById('popup-gallery')
+        const popupCancel = photoPopup.querySelector('.photo-popup-cancel')
+        const popupBackdrop = photoPopup.querySelector('.photo-popup-backdrop')
+        let activeDocId = null  // which document is being picked
+
+        // Document file references (stores the selected File for each doc)
+        const docFiles = { 'cie-retro': null, 'cie-fronte': null, 'ts-fronte': null, 'ts-retro': null }
 
         // =====================================================================
         // State
@@ -415,12 +457,57 @@
             }
         })
 
+        // =====================================================================
+        // Photo Popup (action sheet) logic
+        // =====================================================================
+
+        // Show popup on button click
+        document.querySelectorAll('.doc-pick-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                activeDocId = btn.dataset.doc
+                photoPopup.hidden = false
+            })
+        })
+
+        // Camera option
+        popupCamera.addEventListener('click', () => {
+            photoPopup.hidden = true
+            document.getElementById(activeDocId + '-camera').click()
+        })
+
+        // Gallery option
+        popupGallery.addEventListener('click', () => {
+            photoPopup.hidden = true
+            document.getElementById(activeDocId + '-gallery').click()
+        })
+
+        // Cancel / backdrop
+        popupCancel.addEventListener('click', () => { photoPopup.hidden = true })
+        popupBackdrop.addEventListener('click', () => { photoPopup.hidden = true })
+
+        // Handle file selection (both camera and gallery inputs)
+        document.querySelectorAll('[id$="-camera"], [id$="-gallery"]').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const file = e.target.files[0]
+                if (!file) return
+                // Determine which doc this belongs to (strip -camera or -gallery suffix)
+                const docId = input.id.replace(/-camera$/, '').replace(/-gallery$/, '')
+                docFiles[docId] = file
+                // Show filename
+                const filenameEl = document.getElementById(docId + '-filename')
+                if (filenameEl) filenameEl.textContent = file.name
+                // Update button text
+                const btn = document.querySelector(`[data-doc="${docId}"]`)
+                if (btn) btn.textContent = '✓ ' + file.name.substring(0, 20) + (file.name.length > 20 ? '...' : '')
+            })
+        })
+
         // Extract button: collects all available files and runs multi-source extraction
         btnExtract.addEventListener('click', async () => {
-            const cieRetroFile = cieRetroInput.files[0] || null
-            const cieFronteFile = cieFronteInput.files[0] || null
-            const tsFronteFile = tsFronteInput.files[0] || null
-            const tsRetroFile = tsRetroInput.files[0] || null
+            const cieRetroFile = docFiles['cie-retro']
+            const cieFronteFile = docFiles['cie-fronte']
+            const tsFronteFile = docFiles['ts-fronte']
+            const tsRetroFile = docFiles['ts-retro']
 
             if (!cieRetroFile && !cieFronteFile && !tsFronteFile && !tsRetroFile) {
                 showToast('Seleziona almeno una foto di un documento', 'error')

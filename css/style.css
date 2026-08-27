@@ -674,3 +674,63 @@ body.dark .spinner {
         padding: 28px 24px;
     }
 }
+
+/* ---------- Photo Popup (action sheet) ---------- */
+.photo-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.photo-popup-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.photo-popup-menu {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 12px 12px 0 0;
+    padding: 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+.photo-popup-option {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 14px 16px;
+    border: none;
+    background: transparent;
+    font-size: 1rem;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.photo-popup-option:active {
+    background-color: #f0f0f0;
+}
+
+.photo-popup-cancel {
+    margin-top: 8px;
+    color: #c62828;
+    border-top: 1px solid #eee;
+    padding-top: 14px;
+}
+
+.doc-filename {
+    display: block;
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

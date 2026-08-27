@@ -1,6 +1,6 @@
 {
   "name": "gestione-microchip",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "type": "module",
   "description": "Gestione ciclo di vita microchip gatti",
   "scripts": {
