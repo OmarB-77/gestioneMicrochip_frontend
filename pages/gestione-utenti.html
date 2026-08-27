@@ -140,7 +140,7 @@
 
             const { data, error } = await supabase
                 .from('profiles')
-                .select('id, display_name, active, associazione_id, associazioni(nome)')
+                .select('id, display_name, associazione_id, associazioni(nome)')
                 .eq('role', 'guest')
                 .order('display_name', { ascending: true })
 
@@ -167,25 +167,20 @@
                         <strong>${escapeHtml(guest.display_name)}</strong><br>
                         <span style="font-size:0.8rem;color:#666">
                             ${escapeHtml(assocNome)}
-                            ${guest.active
-                                ? ' — <span style="color:#2e7d32">Attivo</span>'
-                                : ' — <span style="color:#999">Disattivato</span>'}
                         </span>
                     </div>
-                    ${guest.active
-                        ? `<button type="button" class="btn btn-danger btn-disattiva" data-user-id="${guest.id}" data-user-name="${escapeHtml(guest.display_name)}">Disattiva</button>`
-                        : '<span style="font-size:0.8rem;color:#999;padding:8px">Inattivo</span>'}
+                    <button type="button" class="btn btn-danger btn-elimina" data-user-id="${guest.id}" data-user-name="${escapeHtml(guest.display_name)}">Elimina</button>
                 `
                 guestListContainer.appendChild(item)
             })
 
-            // Attach event listeners to disable buttons
-            const disableButtons = guestListContainer.querySelectorAll('.btn-disattiva')
-            disableButtons.forEach(btn => {
+            // Attach event listeners to delete buttons
+            const deleteButtons = guestListContainer.querySelectorAll('.btn-elimina')
+            deleteButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
                     const userId = btn.dataset.userId
                     const userName = btn.dataset.userName
-                    handleDisableGuest(userId, userName)
+                    handleDeleteGuest(userId, userName)
                 })
             })
         }
@@ -266,23 +261,23 @@
         })
 
         // =====================================================================
-        // Disattivazione account guest
+        // Eliminazione account guest
         // =====================================================================
-        async function handleDisableGuest(userId, userName) {
-            const confirmed = confirm(`Disattivare l'account di "${userName}"?`)
+        async function handleDeleteGuest(userId, userName) {
+            const confirmed = confirm(`Eliminare definitivamente l'account di "${userName}"? L'operazione non è reversibile.`)
             if (!confirmed) return
 
-            const { data, error } = await supabase.functions.invoke('disable-guest-user', {
+            const { data, error } = await supabase.functions.invoke('delete-guest-user', {
                 body: { user_id: userId }
             })
 
             if (error || (data && data.error)) {
                 const errorMsg = data?.error || error?.message || ''
-                showToast(errorMsg || 'Errore durante la disattivazione. Riprova.', 'error')
+                showToast(errorMsg || 'Errore durante l\'eliminazione. Riprova.', 'error')
                 return
             }
 
-            showToast('Account disattivato con successo', 'success')
+            showToast('Account eliminato con successo', 'success')
             await loadGuestList()
         }
 

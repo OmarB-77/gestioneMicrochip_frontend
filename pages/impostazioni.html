@@ -23,11 +23,29 @@
                 <p id="camera-error" class="info-message" hidden>Permesso fotocamera negato. Consenti l'accesso nelle impostazioni del browser.</p>
             </div>
         </section>
+
+        <section class="form-container" style="margin-top: 16px;">
+            <h2 class="form-title">Cambia password</h2>
+            <form id="change-password-form" novalidate>
+                <div class="form-group">
+                    <label for="new-password">Nuova password (min. 6 caratteri)</label>
+                    <input type="password" id="new-password" name="new_password" required minlength="6" autocomplete="new-password">
+                    <span class="error-msg"></span>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Conferma nuova password</label>
+                    <input type="password" id="confirm-password" name="confirm_password" required minlength="6" autocomplete="new-password">
+                    <span class="error-msg"></span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Aggiorna password</button>
+            </form>
+        </section>
     </main>
 
     <script type="module">
         import { protectPage } from '../js/router.js'
         import { initDarkMode, showToast } from '../js/ui-utils.js'
+        import { supabase } from '../js/supabase-client.js'
         import { Html5Qrcode } from 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/+esm'
 
         initDarkMode()
@@ -35,6 +53,9 @@
         const ctx = await protectPage(['admin', 'guest'])
         if (!ctx) throw new Error('Accesso negato')
 
+        // =================================================================
+        // Camera selection
+        // =================================================================
         const cameraLoading = document.getElementById('camera-loading')
         const cameraList = document.getElementById('camera-list')
         const cameraEmpty = document.getElementById('camera-empty')
@@ -83,6 +104,33 @@
             cameraLoading.hidden = true
             cameraError.hidden = false
         }
+
+        // =================================================================
+        // Change password
+        // =================================================================
+        const pwForm = document.getElementById('change-password-form')
+        pwForm.addEventListener('submit', async (e) => {
+            e.preventDefault()
+            const newPw = document.getElementById('new-password').value
+            const confirmPw = document.getElementById('confirm-password').value
+
+            if (newPw.length < 6) {
+                showToast('La password deve avere almeno 6 caratteri', 'error')
+                return
+            }
+            if (newPw !== confirmPw) {
+                showToast('Le password non corrispondono', 'error')
+                return
+            }
+
+            const { error } = await supabase.auth.updateUser({ password: newPw })
+            if (error) {
+                showToast('Errore durante l\'aggiornamento: ' + error.message, 'error')
+            } else {
+                showToast('Password aggiornata con successo', 'success')
+                pwForm.reset()
+            }
+        })
     </script>
 </body>
 </html>
