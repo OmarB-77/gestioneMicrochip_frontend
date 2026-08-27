@@ -78,20 +78,36 @@
                 <h2 class="form-section-title">Dati adottante</h2>
 
                 <button type="button" id="btn-leggi-cie" class="btn btn-secondary btn-full">
-                    📄 Leggi carta d'identità (CIE)
+                    📄 Leggi documenti d'identità
                 </button>
 
-                <!-- CIE file inputs (hidden until user taps "Leggi CIE") -->
-                <div id="cie-inputs" hidden>
+                <!-- Document photo inputs (hidden until user taps button) -->
+                <div id="doc-inputs" hidden>
+                    <p class="info-message">Fotografa i documenti disponibili per precompilare i campi automaticamente.</p>
                     <div class="form-group">
-                        <label for="cie-retro">Foto retro (MRZ)</label>
+                        <label for="cie-retro">📋 Retro carta d'identità (lato codice a barre + MRZ)</label>
                         <input type="file" id="cie-retro" accept="image/*" capture="environment">
                     </div>
                     <div class="form-group">
-                        <label for="cie-fronte">Foto fronte (indirizzo)</label>
+                        <label for="cie-fronte">📋 Fronte carta d'identità (lato foto)</label>
                         <input type="file" id="cie-fronte" accept="image/*" capture="environment">
                     </div>
-                    <p class="info-message" id="cie-status" hidden></p>
+                    <div class="form-group">
+                        <label for="ts-fronte">💚 Fronte tessera sanitaria (lato dati)</label>
+                        <input type="file" id="ts-fronte" accept="image/*" capture="environment">
+                    </div>
+                    <div class="form-group">
+                        <label for="ts-retro">💚 Retro tessera sanitaria (lato codice a barre)</label>
+                        <input type="file" id="ts-retro" accept="image/*" capture="environment">
+                    </div>
+                    <button type="button" id="btn-extract" class="btn btn-primary btn-full">🔍 Estrai dati dai documenti</button>
+                    <p class="info-message" id="extract-status" hidden></p>
+                    <div id="extracted-info" class="form-group" hidden>
+                        <div style="background:#f0f9f4;border:1px solid #b8e6cc;border-radius:8px;padding:10px;margin-top:8px;">
+                            <span style="font-size:0.85rem;color:#555;">Luogo di nascita:</span>
+                            <strong id="extracted-luogo" style="margin-left:6px;"></strong>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -171,8 +187,7 @@
         import { validateCodiceFiscale } from '../js/validation.js'
         import { supabase } from '../js/supabase-client.js'
         import { startScan, stopScan } from '../js/scanner.js'
-        import { extractMRZFromImage, extractAddressFromImage } from '../js/ocr.js'
-        import { parseMRZ } from '../js/mrz-parser.js'
+        import { extractDocumentData } from '../js/ocr.js'
 
         // Inizializza dark mode
         initDarkMode()
@@ -196,10 +211,15 @@
         const form = document.getElementById('affida-gatto-form')
         const chipSelezionato = document.getElementById('chip-selezionato')
         const btnLeggiCie = document.getElementById('btn-leggi-cie')
-        const cieInputs = document.getElementById('cie-inputs')
+        const docInputs = document.getElementById('doc-inputs')
         const cieRetroInput = document.getElementById('cie-retro')
         const cieFronteInput = document.getElementById('cie-fronte')
-        const cieStatus = document.getElementById('cie-status')
+        const tsFronteInput = document.getElementById('ts-fronte')
+        const tsRetroInput = document.getElementById('ts-retro')
+        const btnExtract = document.getElementById('btn-extract')
+        const extractStatus = document.getElementById('extract-status')
+        const extractedInfo = document.getElementById('extracted-info')
+        const extractedLuogo = document.getElementById('extracted-luogo')
 
         // =====================================================================
         // State
@@ -384,123 +404,114 @@
         })
 
         // =====================================================================
-        // CIE Reading Pipeline (MRZ + OCR)
+        // Document Reading Pipeline (Multi-source extraction)
         // =====================================================================
         btnLeggiCie.addEventListener('click', () => {
-            cieInputs.hidden = !cieInputs.hidden
-            if (!cieInputs.hidden) {
-                btnLeggiCie.textContent = '✕ Chiudi lettura CIE'
+            docInputs.hidden = !docInputs.hidden
+            if (!docInputs.hidden) {
+                btnLeggiCie.textContent = '✕ Chiudi lettura documenti'
             } else {
-                btnLeggiCie.textContent = '📄 Leggi carta d\'identità (CIE)'
+                btnLeggiCie.textContent = '📄 Leggi documenti d\'identità'
             }
         })
 
-        // Retro photo: MRZ extraction
-        cieRetroInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0]
-            if (!file) return
+        // Extract button: collects all available files and runs multi-source extraction
+        btnExtract.addEventListener('click', async () => {
+            const cieRetroFile = cieRetroInput.files[0] || null
+            const cieFronteFile = cieFronteInput.files[0] || null
+            const tsFronteFile = tsFronteInput.files[0] || null
+            const tsRetroFile = tsRetroInput.files[0] || null
 
-            cieStatus.textContent = 'Elaborazione MRZ in corso...'
-            cieStatus.hidden = false
-
-            try {
-                const { mrzText, error: mrzError } = await extractMRZFromImage(file)
-
-                if (mrzError || !mrzText) {
-                    cieStatus.textContent = ''
-                    cieStatus.hidden = true
-                    showToast('Impossibile leggere la banda MRZ. Riprova con una foto più nitida.', 'error')
-                    return
-                }
-
-                // Parse MRZ
-                const { fields, errors: parseErrors } = parseMRZ(mrzText)
-
-                if (!fields || (parseErrors && parseErrors.length > 0)) {
-                    cieStatus.textContent = ''
-                    cieStatus.hidden = true
-                    showToast('MRZ non valida: ' + (parseErrors ? parseErrors[0] : 'formato non riconosciuto'), 'error')
-                    return
-                }
-
-                // Pre-fill fields from MRZ data
-                fillFieldsFromMRZ(fields)
-
-                cieStatus.textContent = 'Dati MRZ estratti con successo'
-                cieStatus.hidden = false
-                setTimeout(() => { cieStatus.hidden = true }, 3000)
-
-            } catch (err) {
-                cieStatus.textContent = ''
-                cieStatus.hidden = true
-                showToast('Errore durante la lettura della carta. Inserisci i dati manualmente.', 'error')
+            if (!cieRetroFile && !cieFronteFile && !tsFronteFile && !tsRetroFile) {
+                showToast('Seleziona almeno una foto di un documento', 'error')
+                return
             }
-        })
 
-        // Fronte photo: address extraction
-        cieFronteInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0]
-            if (!file) return
-
-            cieStatus.textContent = 'Estrazione indirizzo in corso...'
-            cieStatus.hidden = false
+            extractStatus.textContent = 'Elaborazione in corso...'
+            extractStatus.hidden = false
+            btnExtract.disabled = true
 
             try {
-                const { address, error: addrError } = await extractAddressFromImage(file)
+                const { fields, errors } = await extractDocumentData({
+                    cieRetro: cieRetroFile,
+                    cieFronte: cieFronteFile,
+                    tsFronte: tsFronteFile,
+                    tsRetro: tsRetroFile
+                })
 
-                if (address) {
-                    document.getElementById('adottante-residenza').value = address
-                    cieStatus.textContent = 'Indirizzo estratto con successo'
-                    cieStatus.hidden = false
-                    setTimeout(() => { cieStatus.hidden = true }, 3000)
+                // Fill form fields with extracted data
+                fillFieldsFromExtraction(fields)
+
+                // Show luogoNascita if available
+                if (fields.luogoNascita) {
+                    extractedLuogo.textContent = fields.luogoNascita
+                    extractedInfo.hidden = false
                 } else {
-                    // No error toast for address failure — field just stays empty for manual entry
-                    cieStatus.textContent = ''
-                    cieStatus.hidden = true
+                    extractedInfo.hidden = true
+                }
+
+                // Determine success level
+                const filledCount = Object.values(fields).filter(v => v !== null).length
+                if (filledCount === 0) {
+                    extractStatus.textContent = ''
+                    extractStatus.hidden = true
+                    showToast('Impossibile estrarre dati dai documenti. Inserisci i dati manualmente.', 'error')
+                } else if (errors.length > 0) {
+                    extractStatus.textContent = `Dati parzialmente estratti (${filledCount} campi)`
+                    extractStatus.hidden = false
+                    setTimeout(() => { extractStatus.hidden = true }, 4000)
+                    showToast('Alcuni dati estratti con successo. Verifica i campi.', 'success')
+                } else {
+                    extractStatus.textContent = `Dati estratti con successo (${filledCount} campi)`
+                    extractStatus.hidden = false
+                    setTimeout(() => { extractStatus.hidden = true }, 4000)
+                    showToast('Dati estratti con successo!', 'success')
                 }
             } catch (err) {
-                // Silent failure for address — user can enter manually
-                cieStatus.textContent = ''
-                cieStatus.hidden = true
+                extractStatus.textContent = ''
+                extractStatus.hidden = true
+                showToast('Errore durante la lettura dei documenti. Inserisci i dati manualmente.', 'error')
+            } finally {
+                btnExtract.disabled = false
             }
         })
 
         /**
-         * Fill adoption form fields from parsed MRZ data.
+         * Fill adoption form fields from multi-source extraction results.
          * Handles partial data: fills only what was successfully extracted.
          */
-        function fillFieldsFromMRZ(fields) {
-            // Nome (givenNames)
-            if (fields.givenNames) {
-                document.getElementById('adottante-nome').value = capitalizeWords(fields.givenNames)
+        function fillFieldsFromExtraction(fields) {
+            if (fields.nome) {
+                document.getElementById('adottante-nome').value = capitalizeWords(fields.nome)
             }
-
-            // Cognome (surname)
-            if (fields.surname) {
-                document.getElementById('adottante-cognome').value = capitalizeWords(fields.surname)
+            if (fields.cognome) {
+                document.getElementById('adottante-cognome').value = capitalizeWords(fields.cognome)
             }
-
-            // Data di nascita (dateOfBirth: YYMMDD → date input YYYY-MM-DD)
-            if (fields.dateOfBirth && fields.dateOfBirth.length === 6) {
-                const dobDate = mrzDateToISO(fields.dateOfBirth)
+            if (fields.codiceFiscale) {
+                document.getElementById('adottante-cf').value = fields.codiceFiscale.toUpperCase()
+            }
+            if (fields.dataNascita) {
+                // dataNascita could be YYYY-MM-DD (from CF decode) or YYMMDD (from MRZ)
+                let dobDate = null
+                if (fields.dataNascita.includes('-')) {
+                    // Already in ISO format
+                    dobDate = fields.dataNascita
+                } else if (fields.dataNascita.length === 6) {
+                    // YYMMDD format from MRZ
+                    dobDate = mrzDateToISO(fields.dataNascita)
+                }
                 if (dobDate) {
                     document.getElementById('adottante-data-nascita').value = dobDate
                 }
             }
-
-            // Codice fiscale: from optionalData1 field (Italian CIE stores CF there)
-            if (fields.optionalData1 && fields.optionalData1.trim().length === 16) {
-                document.getElementById('adottante-cf').value = fields.optionalData1.trim().toUpperCase()
+            if (fields.indirizzo) {
+                document.getElementById('adottante-residenza').value = fields.indirizzo
             }
-
-            // Numero documento (documentNumber)
-            if (fields.documentNumber) {
-                document.getElementById('adottante-documento').value = fields.documentNumber.trim()
+            if (fields.numeroDocumento) {
+                document.getElementById('adottante-documento').value = fields.numeroDocumento.trim()
             }
-
-            // Scadenza documento (expiryDate: YYMMDD → YYYY-MM-DD)
-            if (fields.expiryDate && fields.expiryDate.length === 6) {
-                const expDate = mrzDateToISO(fields.expiryDate, true)
+            if (fields.dataScadenza && fields.dataScadenza.length === 6) {
+                const expDate = mrzDateToISO(fields.dataScadenza, true)
                 if (expDate) {
                     document.getElementById('adottante-scadenza-doc').value = expDate
                 }
@@ -705,9 +716,10 @@
             dataAdozioneInput.value = today
             dataAdozioneInput.max = today
             gattoSearch.value = ''
-            cieInputs.hidden = true
-            btnLeggiCie.textContent = '📄 Leggi carta d\'identità (CIE)'
-            cieStatus.hidden = true
+            docInputs.hidden = true
+            btnLeggiCie.textContent = '📄 Leggi documenti d\'identità'
+            extractStatus.hidden = true
+            extractedInfo.hidden = true
 
             await loadCats()
         })
