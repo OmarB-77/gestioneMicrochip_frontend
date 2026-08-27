@@ -13,6 +13,19 @@ const CONTAINER_ID = 'barcode-temp-container'
 const CF_PATTERN = /^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/
 
 /**
+ * Wraps a promise with a timeout to prevent indefinite blocking (e.g. on mobile).
+ * @param {Promise} promise - The promise to wrap
+ * @param {number} ms - Timeout in milliseconds
+ * @returns {Promise}
+ */
+function withTimeout(promise, ms) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms))
+    ])
+}
+
+/**
  * Ensures the hidden container element exists in the DOM.
  * html5-qrcode needs a container for internal rendering even for file scanning.
  */
@@ -29,6 +42,7 @@ function ensureContainer() {
 
 /**
  * Decode a barcode from an image file.
+ * Includes a 10s timeout to prevent hanging on mobile where scanFile may never resolve.
  * @param {File} imageFile - Image file containing a barcode
  * @returns {Promise<string|null>} Decoded text or null if not found
  */
@@ -39,10 +53,24 @@ export async function decodeBarcodeFromImage(imageFile) {
 
     try {
         const scanner = new Html5Qrcode(containerId)
-        const decodedText = await scanner.scanFile(imageFile, /* showImage= */ false)
+
+        // Guard: ensure scanFile is available (defensive check for different lib versions)
+        if (typeof scanner.scanFile !== 'function') {
+            return null
+        }
+
+        const decodedText = await withTimeout(
+            scanner.scanFile(imageFile, /* showImage= */ false),
+            10000 // 10 second timeout
+        )
+        try { await scanner.clear() } catch { /* ignore cleanup errors */ }
         return decodedText || null
     } catch {
-        // Barcode not found or decoding error — expected for many images
+        // Barcode not found, decoding error, or timeout — expected for many images
+        try {
+            const scanner = new Html5Qrcode(containerId)
+            await scanner.clear()
+        } catch { /* ignore cleanup errors */ }
         return null
     }
 }

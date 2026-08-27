@@ -493,6 +493,19 @@ export async function extractNameFromTSImage(imageFile) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
+ * Wraps an async step with a timeout to prevent indefinite blocking on mobile.
+ * @param {Function} fn - Async function to execute
+ * @param {number} timeoutMs - Max time in milliseconds (default 30s)
+ * @returns {Promise}
+ */
+async function withStepTimeout(fn, timeoutMs = 30000) {
+    return Promise.race([
+        fn(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Step timeout')), timeoutMs))
+    ])
+}
+
+/**
  * Multi-source document data extraction.
  * Orchestrates barcode, CF decode, MRZ OCR, TS OCR, and address extraction.
  * 
@@ -526,7 +539,7 @@ export async function extractDocumentData(images) {
     // ═══ Step 1: CIE retro barcode → CF ═══
     if (cieRetro) {
         try {
-            const cf = await extractCFFromBarcode(cieRetro)
+            const cf = await withStepTimeout(() => extractCFFromBarcode(cieRetro), 15000)
             if (cf) {
                 fields.codiceFiscale = cf
                 cfDecoded = await decodeCF(cf)
@@ -536,14 +549,14 @@ export async function extractDocumentData(images) {
                 }
             }
         } catch (err) {
-            errors.push('Errore lettura barcode CIE: ' + (err.message || 'sconosciuto'))
+            errors.push('Timeout lettura barcode CIE')
         }
     }
 
     // ═══ Step 2: TS retro barcode → CF (fallback) ═══
     if (!fields.codiceFiscale && tsRetro) {
         try {
-            const cf = await extractCFFromBarcode(tsRetro)
+            const cf = await withStepTimeout(() => extractCFFromBarcode(tsRetro), 15000)
             if (cf) {
                 fields.codiceFiscale = cf
                 cfDecoded = await decodeCF(cf)
@@ -553,14 +566,14 @@ export async function extractDocumentData(images) {
                 }
             }
         } catch (err) {
-            errors.push('Errore lettura barcode TS: ' + (err.message || 'sconosciuto'))
+            errors.push('Timeout lettura barcode TS')
         }
     }
 
     // ═══ Step 3: CIE retro MRZ → nome, cognome, dates, docnum ═══
     if (cieRetro) {
         try {
-            const { mrzText, error: mrzError } = await extractMRZFromImage(cieRetro)
+            const { mrzText, error: mrzError } = await withStepTimeout(() => extractMRZFromImage(cieRetro), 30000)
 
             if (mrzText) {
                 // Import parseMRZ from mrz-parser for structured parsing
@@ -604,14 +617,14 @@ export async function extractDocumentData(images) {
                 errors.push(mrzError)
             }
         } catch (err) {
-            errors.push('Errore estrazione MRZ: ' + (err.message || 'sconosciuto'))
+            errors.push('Timeout o errore estrazione MRZ: ' + (err.message || 'sconosciuto'))
         }
     }
 
     // ═══ Step 4: TS fronte OCR → nome, cognome (supplementary) ═══
     if (tsFronte) {
         try {
-            const tsResult = await extractNameFromTSImage(tsFronte)
+            const tsResult = await withStepTimeout(() => extractNameFromTSImage(tsFronte), 30000)
 
             // Use TS names if MRZ didn't produce them or they're too short
             if (tsResult.cognome && (!fields.cognome || fields.cognome.length < 2)) {
@@ -653,19 +666,19 @@ export async function extractDocumentData(images) {
                 }
             }
         } catch (err) {
-            errors.push('Errore OCR tessera sanitaria: ' + (err.message || 'sconosciuto'))
+            errors.push('Timeout o errore OCR tessera sanitaria: ' + (err.message || 'sconosciuto'))
         }
     }
 
     // ═══ Step 5: CIE fronte → indirizzo ═══
     if (cieFronte) {
         try {
-            const { address } = await extractAddressFromImage(cieFronte)
+            const { address } = await withStepTimeout(() => extractAddressFromImage(cieFronte), 30000)
             if (address) {
                 fields.indirizzo = address
             }
         } catch (err) {
-            errors.push('Errore estrazione indirizzo: ' + (err.message || 'sconosciuto'))
+            errors.push('Timeout o errore estrazione indirizzo: ' + (err.message || 'sconosciuto'))
         }
     }
 
