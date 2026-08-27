@@ -218,6 +218,9 @@
 
                     <button type="submit" class="btn btn-primary btn-full">Salva modifiche</button>
                 </form>
+                <p id="guest-note" class="info-message" style="margin-top:16px; font-style:italic;" hidden>
+                    Per eventuali modifiche contattare il Veterinario di riferimento
+                </p>
             </section>
         </section>
     </main>
@@ -607,6 +610,54 @@
             }
 
             chipDetail.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+            // Guest field restrictions
+            if (role === 'guest') {
+                const allInputs = form.querySelectorAll('input, select, textarea')
+                const isRegistrato = chip.stato === 'registrato'
+
+                allInputs.forEach(input => {
+                    // numero_chip and stato are always readonly (already set)
+                    if (input.id === 'detail-numero-chip' || input.id === 'detail-stato') return
+
+                    if (isRegistrato) {
+                        // All fields locked
+                        input.readOnly = true
+                        if (input.tagName === 'SELECT') input.disabled = true
+                        if (input.type === 'checkbox') input.disabled = true
+                    } else {
+                        // Only nome_gatto is editable
+                        if (input.id === 'detail-nome-gatto') {
+                            input.readOnly = false
+                        } else {
+                            input.readOnly = true
+                            if (input.tagName === 'SELECT') input.disabled = true
+                            if (input.type === 'checkbox') input.disabled = true
+                        }
+                    }
+                })
+
+                // Show/hide save button
+                const submitBtn = form.querySelector('button[type="submit"]')
+                if (isRegistrato) {
+                    submitBtn.hidden = true
+                } else {
+                    submitBtn.hidden = false
+                }
+
+                // Show guest note
+                document.getElementById('guest-note').hidden = false
+            } else {
+                // Admin: ensure everything is editable (reset from previous guest view)
+                const allInputs = form.querySelectorAll('input, select, textarea')
+                allInputs.forEach(input => {
+                    if (input.id === 'detail-numero-chip' || input.id === 'detail-stato') return
+                    input.readOnly = false
+                    input.disabled = false
+                })
+                form.querySelector('button[type="submit"]').hidden = false
+                document.getElementById('guest-note').hidden = true
+            }
         }
 
         // =====================================================================
