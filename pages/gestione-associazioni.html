@@ -150,8 +150,8 @@
                 item.innerHTML = `
                     <input type="text" class="assoc-name-input" value="${escapeHtml(assoc.nome)}" readonly data-original="${escapeHtml(assoc.nome)}">
                     <div class="assoc-actions">
-                        <button type="button" class="btn btn-secondary btn-sm btn-action-icon btn-modifica" data-id="${assoc.id}" aria-label="Modifica" title="Modifica">✏️</button>
-                        <button type="button" class="btn btn-danger btn-sm btn-action-icon btn-elimina" data-id="${assoc.id}" data-nome="${escapeHtml(assoc.nome)}" aria-label="Elimina" title="Elimina">🗑️</button>
+                        <button type="button" class="btn btn-secondary btn-action-icon btn-modifica" data-id="${assoc.id}" aria-label="Modifica" title="Modifica">✏️</button>
+                        <button type="button" class="btn btn-danger btn-action-icon btn-elimina" data-id="${assoc.id}" data-nome="${escapeHtml(assoc.nome)}" aria-label="Elimina" title="Elimina">🗑️</button>
                     </div>
                 `
                 assocListContainer.appendChild(item)
