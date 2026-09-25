@@ -82,6 +82,10 @@
                         <span class="summary-value" id="sum-indirizzo"></span>
                     </div>
                     <div class="summary-row">
+                        <span class="summary-label">Telefono</span>
+                        <span class="summary-value" id="sum-telefono"></span>
+                    </div>
+                    <div class="summary-row">
                         <span class="summary-label">Numero scheda</span>
                         <span class="summary-value" id="sum-scheda"></span>
                     </div>
@@ -148,7 +152,7 @@
 
             const { data, error } = await supabase
                 .from('chips')
-                .select('id, numero_chip, nome_gatto, nome_gatto_adozione, genere_gatto, data_nascita_gatto, tipologia_pelo, colore_mantello, adottante_cognome, adottante_nome, adottante_cf, adottante_data_nascita, adottante_luogo_nascita, adottante_residenza, numero_scheda, data_impianto')
+                .select('id, numero_chip, nome_gatto, nome_gatto_adozione, genere_gatto, data_nascita_gatto, tipologia_pelo, colore_mantello, adottante_cognome, adottante_nome, adottante_cf, adottante_data_nascita, adottante_luogo_nascita, adottante_residenza, adottante_telefono, numero_scheda, data_impianto')
                 .eq('stato', 'adottato')
                 .order('nome_gatto', { ascending: true })
 
@@ -247,6 +251,7 @@
             document.getElementById('sum-cf').textContent = cat.adottante_cf || '—'
             document.getElementById('sum-luogo-nascita').textContent = cat.adottante_luogo_nascita || '—'
             document.getElementById('sum-indirizzo').textContent = cat.adottante_residenza || '—'
+            document.getElementById('sum-telefono').textContent = cat.adottante_telefono || '—'
             document.getElementById('sum-scheda').textContent = cat.numero_scheda || '—'
 
             // Reset date
