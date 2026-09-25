@@ -631,18 +631,21 @@ body.dark .spinner {
     gap: 8px;
 }
 
-/* Bottoni azione a icona (matita / cestino) */
-.assoc-actions .btn-icon {
+/* Bottoni azione a icona (matita / cestino) nella lista associazioni */
+.assoc-actions .btn-action-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex: 0 0 auto;
     width: 40px;
     height: 40px;
+    min-width: 40px;
     min-height: 40px;
     padding: 0;
     font-size: 1.125rem;
     line-height: 1;
     border-radius: 8px;
+    box-sizing: border-box;
 }
 
 /* ---------- BDN Summary ---------- */
