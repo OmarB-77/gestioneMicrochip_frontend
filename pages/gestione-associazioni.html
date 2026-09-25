@@ -150,8 +150,8 @@
                 item.innerHTML = `
                     <input type="text" class="assoc-name-input" value="${escapeHtml(assoc.nome)}" readonly data-original="${escapeHtml(assoc.nome)}">
                     <div class="assoc-actions">
-                        <button type="button" class="btn btn-secondary btn-sm btn-modifica" data-id="${assoc.id}">Modifica</button>
-                        <button type="button" class="btn btn-danger btn-sm btn-elimina" data-id="${assoc.id}" data-nome="${escapeHtml(assoc.nome)}">Elimina</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-icon btn-modifica" data-id="${assoc.id}" aria-label="Modifica" title="Modifica">✏️</button>
+                        <button type="button" class="btn btn-danger btn-sm btn-icon btn-elimina" data-id="${assoc.id}" data-nome="${escapeHtml(assoc.nome)}" aria-label="Elimina" title="Elimina">🗑️</button>
                     </div>
                 `
                 assocListContainer.appendChild(item)
@@ -192,7 +192,7 @@
                 // Entra in modalità modifica
                 input.readOnly = false
                 input.focus()
-                btn.textContent = 'Salva'
+                btn.textContent = '💾'; btn.title = 'Salva'; btn.setAttribute('aria-label', 'Salva')
                 btn.classList.remove('btn-secondary')
                 btn.classList.add('btn-primary')
 
@@ -226,7 +226,7 @@
 
         function exitEditMode(input, btn) {
             input.readOnly = true
-            btn.textContent = 'Modifica'
+            btn.textContent = '✏️'; btn.title = 'Modifica'; btn.setAttribute('aria-label', 'Modifica')
             btn.classList.remove('btn-primary')
             btn.classList.add('btn-secondary')
         }
