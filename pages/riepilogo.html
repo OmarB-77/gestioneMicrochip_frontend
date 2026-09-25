@@ -107,20 +107,24 @@
                 const s = chip.stato
                 countsByState[s] = (countsByState[s] || 0) + 1
 
-                if (s !== 'disponibile' && chip.associazione_id) {
-                    if (!countsByStateAndAssoc[s][chip.associazione_id]) {
-                        countsByStateAndAssoc[s][chip.associazione_id] = 0
+                // Split per associazione. Per i disponibili includiamo anche
+                // i chip senza associazione (associazione_id NULL) come Non assegnati.
+                const assocKey = chip.associazione_id
+                    ? chip.associazione_id
+                    : (s === 'disponibile' ? '__none__' : null)
+
+                if (assocKey) {
+                    if (!countsByStateAndAssoc[s][assocKey]) {
+                        countsByStateAndAssoc[s][assocKey] = 0
                     }
-                    countsByStateAndAssoc[s][chip.associazione_id]++
+                    countsByStateAndAssoc[s][assocKey]++
                 }
             }
 
             // 4. Renderizza
-            // Disponibile: solo totale
-            contentEl.appendChild(createCard(labels.disponibile, countsByState.disponibile))
-
-            // Impiantato, Adottato, Registrato: totale + per associazione
-            for (const s of ['impiantato', 'adottato', 'registrato']) {
+            // Tutti gli stati: totale + suddivisione per associazione.
+            // Per disponibile la sub-lista include anche i chip non assegnati.
+            for (const s of ['disponibile', 'impiantato', 'adottato', 'registrato']) {
                 contentEl.appendChild(createCard(labels[s], countsByState[s]))
 
                 // Sub-lista per associazione
@@ -130,7 +134,9 @@
                     subList.className = 'riepilogo-sublist'
 
                     for (const [assocId, count] of Object.entries(assocCounts)) {
-                        const nome = assocMap[assocId] || 'Sconosciuta'
+                        const nome = assocId === '__none__'
+                            ? 'Non assegnati'
+                            : (assocMap[assocId] || 'Sconosciuta')
                         const item = document.createElement('div')
                         item.className = 'riepilogo-subitem'
                         item.innerHTML = `<span class="sublabel">${escapeHtml(nome)}</span><span class="subcount">${count}</span>`
