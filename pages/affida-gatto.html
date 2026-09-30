@@ -77,67 +77,28 @@
                 <!-- Sezione dati adottante -->
                 <h2 class="form-section-title">Dati adottante</h2>
 
-                <button type="button" id="btn-leggi-cie" class="btn btn-secondary btn-full">
-                    📄 Leggi documenti d'identità
-                </button>
+                <!-- Lettura codice fiscale dal barcode (CIE / tessera sanitaria) -->
+                <p class="info-message">Leggi il codice a barre sul retro della carta d'identità o della tessera sanitaria per compilare automaticamente codice fiscale, data e luogo di nascita.</p>
 
-                <!-- Document photo inputs (hidden until user taps button) -->
-                <div id="doc-inputs" hidden>
-                    <p class="info-message">Fotografa i documenti disponibili per precompilare i campi automaticamente.</p>
-
-                    <div class="form-group doc-input-group">
-                        <label>📋 Retro carta d'identità (lato codice a barre + MRZ)</label>
-                        <button type="button" class="btn btn-secondary btn-full doc-pick-btn" data-doc="cie-retro">
-                            Seleziona immagine...
-                        </button>
-                        <span class="doc-filename" id="cie-retro-filename"></span>
-                        <input type="file" id="cie-retro-camera" accept="image/*" capture="environment" hidden>
-                        <input type="file" id="cie-retro-gallery" accept="image/*" hidden>
-                    </div>
-
-                    <div class="form-group doc-input-group">
-                        <label>📋 Fronte carta d'identità (lato foto)</label>
-                        <button type="button" class="btn btn-secondary btn-full doc-pick-btn" data-doc="cie-fronte">
-                            Seleziona immagine...
-                        </button>
-                        <span class="doc-filename" id="cie-fronte-filename"></span>
-                        <input type="file" id="cie-fronte-camera" accept="image/*" capture="environment" hidden>
-                        <input type="file" id="cie-fronte-gallery" accept="image/*" hidden>
-                    </div>
-
-                    <div class="form-group doc-input-group">
-                        <label>💚 Fronte tessera sanitaria (lato dati)</label>
-                        <button type="button" class="btn btn-secondary btn-full doc-pick-btn" data-doc="ts-fronte">
-                            Seleziona immagine...
-                        </button>
-                        <span class="doc-filename" id="ts-fronte-filename"></span>
-                        <input type="file" id="ts-fronte-camera" accept="image/*" capture="environment" hidden>
-                        <input type="file" id="ts-fronte-gallery" accept="image/*" hidden>
-                    </div>
-
-                    <div class="form-group doc-input-group">
-                        <label>💚 Retro tessera sanitaria (lato codice a barre)</label>
-                        <button type="button" class="btn btn-secondary btn-full doc-pick-btn" data-doc="ts-retro">
-                            Seleziona immagine...
-                        </button>
-                        <span class="doc-filename" id="ts-retro-filename"></span>
-                        <input type="file" id="ts-retro-camera" accept="image/*" capture="environment" hidden>
-                        <input type="file" id="ts-retro-gallery" accept="image/*" hidden>
-                    </div>
-
-                    <button type="button" id="btn-extract" class="btn btn-primary btn-full">🔍 Estrai dati dai documenti</button>
-                    <p class="info-message" id="extract-status" hidden></p>
+                <div class="doc-barcode-buttons">
+                    <button type="button" id="btn-scan-barcode" class="btn btn-secondary btn-full">
+                        📷 Scansiona codice a barre
+                    </button>
+                    <button type="button" id="btn-photo-barcode" class="btn btn-secondary btn-full">
+                        🖼️ Carica foto codice a barre
+                    </button>
+                    <input type="file" id="barcode-photo-input" accept="image/*" hidden>
                 </div>
 
-                <!-- Photo source popup (action sheet) -->
-                <div id="photo-popup" class="photo-popup" hidden>
-                    <div class="photo-popup-backdrop"></div>
-                    <div class="photo-popup-menu">
-                        <button type="button" class="photo-popup-option" id="popup-camera">📷 Scatta foto</button>
-                        <button type="button" class="photo-popup-option" id="popup-gallery">📁 Scegli da galleria</button>
-                        <button type="button" class="photo-popup-option photo-popup-cancel">Annulla</button>
-                    </div>
+                <!-- Contenitore scanner live (nascosto finché non si avvia) -->
+                <div id="barcode-scanner-wrap" hidden>
+                    <div id="barcode-scanner-container" class="scanner-area"></div>
+                    <button type="button" id="btn-cancel-scan" class="btn btn-secondary btn-full" style="margin-top:8px;">
+                        Annulla scansione
+                    </button>
                 </div>
+
+                <p class="info-message" id="barcode-status" hidden></p>
 
                 <div class="form-group">
                     <label for="adottante-nome">Nome</label>
@@ -222,8 +183,9 @@
         import { initDarkMode, showToast, showFieldError, clearAllErrors, scrollToFirstError } from '../js/ui-utils.js'
         import { validateCodiceFiscale } from '../js/validation.js'
         import { supabase } from '../js/supabase-client.js'
-        import { startScan, stopScan } from '../js/scanner.js'
-        import { extractDocumentData } from '../js/ocr.js'
+        import { startScan, stopScan, CODE_39 } from '../js/scanner.js'
+        import { extractCFFromBarcode } from '../js/barcode-decoder.js'
+        import { decodeCF } from '../js/cf-decoder.js'
 
         // Inizializza dark mode
         initDarkMode()
@@ -246,21 +208,14 @@
         const scannerContainer = document.getElementById('scanner-container')
         const form = document.getElementById('affida-gatto-form')
         const chipSelezionato = document.getElementById('chip-selezionato')
-        const btnLeggiCie = document.getElementById('btn-leggi-cie')
-        const docInputs = document.getElementById('doc-inputs')
-        const btnExtract = document.getElementById('btn-extract')
-        const extractStatus = document.getElementById('extract-status')
-
-        // Popup elements
-        const photoPopup = document.getElementById('photo-popup')
-        const popupCamera = document.getElementById('popup-camera')
-        const popupGallery = document.getElementById('popup-gallery')
-        const popupCancel = photoPopup.querySelector('.photo-popup-cancel')
-        const popupBackdrop = photoPopup.querySelector('.photo-popup-backdrop')
-        let activeDocId = null  // which document is being picked
-
-        // Document file references (stores the selected File for each doc)
-        const docFiles = { 'cie-retro': null, 'cie-fronte': null, 'ts-fronte': null, 'ts-retro': null }
+        // Lettura barcode documento
+        const btnScanBarcode = document.getElementById('btn-scan-barcode')
+        const btnPhotoBarcode = document.getElementById('btn-photo-barcode')
+        const barcodePhotoInput = document.getElementById('barcode-photo-input')
+        const barcodeScannerWrap = document.getElementById('barcode-scanner-wrap')
+        const btnCancelScan = document.getElementById('btn-cancel-scan')
+        const barcodeStatus = document.getElementById('barcode-status')
+        const BARCODE_SCANNER_CONTAINER = 'barcode-scanner-container'
 
         // =====================================================================
         // State
@@ -445,196 +400,113 @@
         })
 
         // =====================================================================
-        // Document Reading Pipeline (Multi-source extraction)
+        // Lettura codice fiscale dal barcode (CIE / tessera sanitaria)
+        // Il barcode è un CODE_39 contenente il codice fiscale. Dal CF si
+        // ricavano data e luogo di nascita. Gli altri campi restano manuali.
         // =====================================================================
-        btnLeggiCie.addEventListener('click', () => {
-            docInputs.hidden = !docInputs.hidden
-            if (!docInputs.hidden) {
-                btnLeggiCie.textContent = '✕ Chiudi lettura documenti'
-            } else {
-                btnLeggiCie.textContent = '📄 Leggi documenti d\'identità'
+
+        let scanActive = false
+
+        function setBarcodeStatus(msg, show = true) {
+            barcodeStatus.textContent = msg || ''
+            barcodeStatus.hidden = !show || !msg
+        }
+
+        /**
+         * Applica un CF (validato) ai campi del form: CF, data e luogo di nascita.
+         * @returns {Promise<boolean>} true se il CF è stato decodificato con successo
+         */
+        async function applyCF(rawCf) {
+            const cf = (rawCf || '').toUpperCase().replace(/\s/g, '')
+            const match = cf.match(/[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]/)
+            if (!match) return false
+
+            const cfClean = match[0]
+            document.getElementById('adottante-cf').value = cfClean
+
+            const decoded = await decodeCF(cfClean)
+            if (decoded) {
+                if (decoded.dataNascita) {
+                    document.getElementById('adottante-data-nascita').value = decoded.dataNascita
+                }
+                if (decoded.luogoNascita) {
+                    document.getElementById('adottante-luogo-nascita').value =
+                        decoded.luogoNascita.replace(/\b\w/g, c => c.toUpperCase())
+                }
             }
+            return true
+        }
+
+        // --- Scansione live ---
+        btnScanBarcode.addEventListener('click', async () => {
+            if (scanActive) return
+            scanActive = true
+            barcodeScannerWrap.hidden = false
+            setBarcodeStatus('Inquadra il codice a barre del documento...')
+
+            await startScan(
+                BARCODE_SCANNER_CONTAINER,
+                async (decodedText) => {
+                    scanActive = false
+                    barcodeScannerWrap.hidden = true
+                    const ok = await applyCF(decodedText)
+                    if (ok) {
+                        setBarcodeStatus('')
+                        showToast('Codice fiscale letto dal documento', 'success')
+                    } else {
+                        setBarcodeStatus('')
+                        showToast('Il codice a barre non contiene un codice fiscale valido', 'error')
+                    }
+                },
+                (errType) => {
+                    scanActive = false
+                    barcodeScannerWrap.hidden = true
+                    setBarcodeStatus('')
+                    if (errType === 'TIMEOUT') {
+                        showToast('Tempo scaduto. Riprova o carica una foto.', 'error')
+                    } else {
+                        showToast('Impossibile accedere alla fotocamera. Carica una foto.', 'error')
+                    }
+                },
+                [CODE_39]
+            )
         })
 
-        // =====================================================================
-        // Photo Popup (action sheet) logic
-        // =====================================================================
-
-        // Show popup on button click
-        document.querySelectorAll('.doc-pick-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                activeDocId = btn.dataset.doc
-                photoPopup.hidden = false
-            })
+        btnCancelScan.addEventListener('click', async () => {
+            await stopScan()
+            scanActive = false
+            barcodeScannerWrap.hidden = true
+            setBarcodeStatus('')
         })
 
-        // Camera option
-        popupCamera.addEventListener('click', () => {
-            photoPopup.hidden = true
-            document.getElementById(activeDocId + '-camera').click()
+        // --- Carica foto ---
+        btnPhotoBarcode.addEventListener('click', () => {
+            barcodePhotoInput.click()
         })
 
-        // Gallery option
-        popupGallery.addEventListener('click', () => {
-            photoPopup.hidden = true
-            document.getElementById(activeDocId + '-gallery').click()
-        })
+        barcodePhotoInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0]
+            e.target.value = '' // reset per permettere di ricaricare lo stesso file
+            if (!file) return
 
-        // Cancel / backdrop
-        popupCancel.addEventListener('click', () => { photoPopup.hidden = true })
-        popupBackdrop.addEventListener('click', () => { photoPopup.hidden = true })
-
-        // Handle file selection (both camera and gallery inputs)
-        document.querySelectorAll('[id$="-camera"], [id$="-gallery"]').forEach(input => {
-            input.addEventListener('change', (e) => {
-                const file = e.target.files[0]
-                if (!file) return
-                // Determine which doc this belongs to (strip -camera or -gallery suffix)
-                const docId = input.id.replace(/-camera$/, '').replace(/-gallery$/, '')
-                docFiles[docId] = file
-                // Show filename
-                const filenameEl = document.getElementById(docId + '-filename')
-                if (filenameEl) filenameEl.textContent = file.name
-                // Update button text
-                const btn = document.querySelector(`[data-doc="${docId}"]`)
-                if (btn) btn.textContent = '✓ ' + file.name.substring(0, 20) + (file.name.length > 20 ? '...' : '')
-            })
-        })
-
-        // Extract button: collects all available files and runs multi-source extraction
-        btnExtract.addEventListener('click', async () => {
-            const cieRetroFile = docFiles['cie-retro']
-            const cieFronteFile = docFiles['cie-fronte']
-            const tsFronteFile = docFiles['ts-fronte']
-            const tsRetroFile = docFiles['ts-retro']
-
-            if (!cieRetroFile && !cieFronteFile && !tsFronteFile && !tsRetroFile) {
-                showToast('Seleziona almeno una foto di un documento', 'error')
-                return
-            }
-
-            extractStatus.textContent = 'Elaborazione in corso...'
-            extractStatus.hidden = false
-            btnExtract.disabled = true
-
+            setBarcodeStatus('Lettura codice a barre in corso...')
+            btnPhotoBarcode.disabled = true
             try {
-                const { fields, errors } = await extractDocumentData({
-                    cieRetro: cieRetroFile,
-                    cieFronte: cieFronteFile,
-                    tsFronte: tsFronteFile,
-                    tsRetro: tsRetroFile
-                })
-
-                // Fill form fields with extracted data
-                fillFieldsFromExtraction(fields)
-
-                // Determine success level
-                const filledCount = Object.values(fields).filter(v => v !== null).length
-                if (filledCount === 0) {
-                    extractStatus.textContent = ''
-                    extractStatus.hidden = true
-                    showToast('Impossibile estrarre dati dai documenti. Inserisci i dati manualmente.', 'error')
-                } else if (errors.length > 0) {
-                    extractStatus.textContent = `Dati parzialmente estratti (${filledCount} campi)`
-                    extractStatus.hidden = false
-                    setTimeout(() => { extractStatus.hidden = true }, 4000)
-                    showToast('Alcuni dati estratti con successo. Verifica i campi.', 'success')
+                const cf = await extractCFFromBarcode(file)
+                if (cf && await applyCF(cf)) {
+                    setBarcodeStatus('')
+                    showToast('Codice fiscale letto dal documento', 'success')
                 } else {
-                    extractStatus.textContent = `Dati estratti con successo (${filledCount} campi)`
-                    extractStatus.hidden = false
-                    setTimeout(() => { extractStatus.hidden = true }, 4000)
-                    showToast('Dati estratti con successo!', 'success')
+                    setBarcodeStatus('')
+                    showToast('Nessun codice fiscale rilevato nella foto. Riprova o inseriscilo a mano.', 'error')
                 }
             } catch (err) {
-                extractStatus.textContent = ''
-                extractStatus.hidden = true
-                showToast('Errore durante la lettura dei documenti. Inserisci i dati manualmente.', 'error')
+                setBarcodeStatus('')
+                showToast('Errore nella lettura della foto. Inserisci il codice fiscale a mano.', 'error')
             } finally {
-                btnExtract.disabled = false
+                btnPhotoBarcode.disabled = false
             }
         })
-
-        /**
-         * Fill adoption form fields from multi-source extraction results.
-         * Handles partial data: fills only what was successfully extracted.
-         */
-        function fillFieldsFromExtraction(fields) {
-            if (fields.nome) {
-                document.getElementById('adottante-nome').value = capitalizeWords(fields.nome)
-            }
-            if (fields.cognome) {
-                document.getElementById('adottante-cognome').value = capitalizeWords(fields.cognome)
-            }
-            if (fields.codiceFiscale) {
-                document.getElementById('adottante-cf').value = fields.codiceFiscale.toUpperCase()
-            }
-            if (fields.dataNascita) {
-                // dataNascita could be YYYY-MM-DD (from CF decode) or YYMMDD (from MRZ)
-                let dobDate = null
-                if (fields.dataNascita.includes('-')) {
-                    // Already in ISO format
-                    dobDate = fields.dataNascita
-                } else if (fields.dataNascita.length === 6) {
-                    // YYMMDD format from MRZ
-                    dobDate = mrzDateToISO(fields.dataNascita)
-                }
-                if (dobDate) {
-                    document.getElementById('adottante-data-nascita').value = dobDate
-                }
-            }
-            if (fields.luogoNascita) {
-                document.getElementById('adottante-luogo-nascita').value = fields.luogoNascita
-            }
-            if (fields.indirizzo) {
-                document.getElementById('adottante-residenza').value = fields.indirizzo
-            }
-            if (fields.numeroDocumento) {
-                document.getElementById('adottante-documento').value = fields.numeroDocumento.trim()
-            }
-            if (fields.dataScadenza && fields.dataScadenza.length === 6) {
-                const expDate = mrzDateToISO(fields.dataScadenza, true)
-                if (expDate) {
-                    document.getElementById('adottante-scadenza-doc').value = expDate
-                }
-            }
-        }
-
-        /**
-         * Convert MRZ date (YYMMDD) to ISO format (YYYY-MM-DD).
-         * For birth dates: 00-99 → 1920-2020 (assume past)
-         * For expiry dates: 00-99 → 2000-2099 (assume future)
-         */
-        function mrzDateToISO(mrzDate, isFutureDate = false) {
-            if (!mrzDate || mrzDate.length !== 6) return null
-
-            const yy = parseInt(mrzDate.substring(0, 2), 10)
-            const mm = mrzDate.substring(2, 4)
-            const dd = mrzDate.substring(4, 6)
-
-            let year
-            if (isFutureDate) {
-                year = 2000 + yy
-            } else {
-                // Birth date: if yy > current year's last 2 digits, it's 1900s
-                const currentYY = new Date().getFullYear() % 100
-                year = yy > currentYY ? 1900 + yy : 2000 + yy
-            }
-
-            // Validate the resulting date
-            const dateStr = `${year}-${mm}-${dd}`
-            const date = new Date(dateStr)
-            if (isNaN(date.getTime())) return null
-
-            return dateStr
-        }
-
-        /**
-         * Capitalize first letter of each word.
-         */
-        function capitalizeWords(str) {
-            if (!str) return ''
-            return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
-        }
 
         // =====================================================================
         // Form submission
@@ -799,9 +671,10 @@
             dataAdozioneInput.value = today
             dataAdozioneInput.max = today
             gattoSearch.value = ''
-            docInputs.hidden = true
-            btnLeggiCie.textContent = '📄 Leggi documenti d\'identità'
-            extractStatus.hidden = true
+            await stopScan()
+            scanActive = false
+            barcodeScannerWrap.hidden = true
+            barcodeStatus.hidden = true
 
             await loadCats()
         })

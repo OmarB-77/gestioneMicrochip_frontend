@@ -8,11 +8,10 @@ import { Html5Qrcode } from 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/+es
 
 const SCAN_TIMEOUT_MS = 30000
 
-const SCAN_CONFIG = {
-    fps: 10,
-    qrbox: { width: 250, height: 250 },
-    formatsToSupport: [0, 5, 9] // QR_CODE=0, CODE_128=5, EAN_13=9
-}
+// Formati di default per la scansione del chip del gatto: QR_CODE=0, CODE_128=5, EAN_13=9
+const DEFAULT_FORMATS = [0, 5, 9]
+// CODE_39=1 — usato per il codice fiscale sul barcode di CIE/tessera sanitaria
+export const CODE_39 = 1
 
 let activeScanner = null
 let activeTimeoutId = null
@@ -22,10 +21,17 @@ let activeTimeoutId = null
  * @param {string} containerId - ID del div dove il lettore verrà renderizzato
  * @param {function} onSuccess - Callback chiamata con il testo decodificato
  * @param {function} onError - Callback chiamata con il tipo di errore ('TIMEOUT' | 'CAMERA_ERROR')
+ * @param {number[]} [formats] - Formati da riconoscere (default: chip gatto). Passare es. [CODE_39] per il barcode del documento.
  */
-export async function startScan(containerId, onSuccess, onError) {
+export async function startScan(containerId, onSuccess, onError, formats = DEFAULT_FORMATS) {
     // Se c'è già una scansione attiva, fermarla prima
     await stopScan()
+
+    const scanConfig = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        formatsToSupport: formats
+    }
 
     const scanner = new Html5Qrcode(containerId)
     activeScanner = scanner
@@ -71,12 +77,12 @@ export async function startScan(containerId, onSuccess, onError) {
     }
 
     try {
-        await scanner.start(cameraConfig, SCAN_CONFIG, onDecoded, onFrame)
+        await scanner.start(cameraConfig, scanConfig, onDecoded, onFrame)
     } catch (err) {
         // If preferred camera failed, try fallback
         if (preferredCameraId) {
             try {
-                await scanner.start({ facingMode: 'environment' }, SCAN_CONFIG, onDecoded, onFrame)
+                await scanner.start({ facingMode: 'environment' }, scanConfig, onDecoded, onFrame)
             } catch (fallbackErr) {
                 if (activeTimeoutId) {
                     clearTimeout(activeTimeoutId)
