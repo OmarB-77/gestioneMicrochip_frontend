@@ -40,6 +40,19 @@
                 <button type="submit" class="btn btn-primary btn-full">Aggiorna password</button>
             </form>
         </section>
+
+        <!-- Keep-alive: solo admin -->
+        <section class="form-container" id="keepalive-section" style="margin-top: 16px;" hidden>
+            <h2 class="form-title">Keep-alive Supabase</h2>
+            <p class="info-message">Esegui un ping per generare attività ed evitare che il progetto venga messo in pausa per inattività.</p>
+            <div class="summary-row">
+                <span class="summary-label">Ultimo keep-alive</span>
+                <span class="summary-value" id="keepalive-last">—</span>
+            </div>
+            <button type="button" id="btn-keepalive" class="btn btn-primary btn-full" style="margin-top:12px;">
+                Esegui keep-alive ora
+            </button>
+        </section>
     </main>
 
     <script type="module">
@@ -131,6 +144,57 @@
                 pwForm.reset()
             }
         })
+
+        // =================================================================
+        // Keep-alive (solo admin)
+        // =================================================================
+        if (ctx.role === 'admin') {
+            const keepaliveSection = document.getElementById('keepalive-section')
+            const keepaliveLast = document.getElementById('keepalive-last')
+            const btnKeepalive = document.getElementById('btn-keepalive')
+            keepaliveSection.hidden = false
+
+            function formatTimestamp(ts) {
+                if (!ts) return 'Mai'
+                const d = new Date(ts)
+                if (isNaN(d.getTime())) return '—'
+                return d.toLocaleString('it-IT', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                })
+            }
+
+            async function loadLastPing() {
+                const { data, error } = await supabase
+                    .from('keep_alive')
+                    .select('last_ping')
+                    .eq('id', 1)
+                    .maybeSingle()
+                if (error) {
+                    keepaliveLast.textContent = 'Non disponibile'
+                    return
+                }
+                keepaliveLast.textContent = formatTimestamp(data && data.last_ping)
+            }
+
+            btnKeepalive.addEventListener('click', async () => {
+                btnKeepalive.disabled = true
+                const originalText = btnKeepalive.textContent
+                btnKeepalive.textContent = 'Esecuzione in corso...'
+                const { data, error } = await supabase.rpc('ping_keep_alive')
+                btnKeepalive.disabled = false
+                btnKeepalive.textContent = originalText
+                if (error) {
+                    showToast('Errore durante il keep-alive: ' + error.message, 'error')
+                    return
+                }
+                // L'RPC ritorna il nuovo timestamp last_ping
+                keepaliveLast.textContent = formatTimestamp(data) 
+                showToast('Keep-alive eseguito', 'success')
+            })
+
+            await loadLastPing()
+        }
     </script>
 </body>
 </html>
